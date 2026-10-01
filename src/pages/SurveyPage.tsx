@@ -26,8 +26,9 @@ import {
   PartyPopper
 } from 'lucide-react';
 import { doc, onSnapshot, setDoc, runTransaction, getDoc, deleteDoc } from 'firebase/firestore';
-import { onAuthStateChanged, User as FirebaseUser, signInAnonymously } from 'firebase/auth';
+import { User as FirebaseUser } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
+import { subscribeAuth, getStoredAuthUser, AppAuthUser } from '../lib/appAuth';
 import { handleFirestoreError, OperationType } from '../lib/firestoreErrorHandler';
 import VintageSeparator from '../components/VintageSeparator';
 import SurveyAnalysisCharts from '../components/SurveyAnalysisCharts';
@@ -128,19 +129,22 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
     };
   }, []);
 
-  // Sync with Cloud: Anonymous User Auth + Firestore personal response
+  // Check if current user is authenticated with a real account (must be logged in, not anonymous)
+  const isUserLoggedIn = Boolean(user && !user.isAnonymous);
+
+  // Sync with Cloud: Real User Auth + Firestore personal response
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
+    const unsubscribeAuth = subscribeAuth(async (currentUser) => {
+      setUser(currentUser as any);
       
       if (unsubscribeProfile) {
         unsubscribeProfile();
         unsubscribeProfile = null;
       }
 
-      if (currentUser) {
+      if (currentUser && !currentUser.isAnonymous) {
         setIsSyncingWithCloud(true);
         
         // Listen to personal profile (for avatar and name)
@@ -164,18 +168,9 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
             setSubmittedData(cloudData);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData));
           } else {
-            // Check if there is local response
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-              try {
-                const parsed = JSON.parse(saved);
-                if (parsed && parsed.submittedAt) {
-                  setSubmittedData(parsed);
-                }
-              } catch (e) {
-                // ignore
-              }
-            }
+            // User is logged in but hasn't submitted yet
+            setSubmittedData(null);
+            localStorage.removeItem(STORAGE_KEY);
           }
         } catch (err) {
           console.error("Failed to sync personal survey from cloud:", err);
@@ -183,17 +178,11 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
           setIsSyncingWithCloud(false);
         }
       } else {
+        // Not logged in or anonymous: cannot have a valid survey submission
         setCustomAvatar(null);
         setCustomName(null);
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            if (parsed && parsed.submittedAt) {
-              setSubmittedData(parsed);
-            }
-          } catch (e) {}
-        }
+        setSubmittedData(null);
+        localStorage.removeItem(STORAGE_KEY);
       }
     });
 
@@ -201,21 +190,6 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
       unsubscribeAuth();
       if (unsubscribeProfile) unsubscribeProfile();
     };
-  }, []);
-
-  // Load from localStorage on mount (initial fast load before cloud sync)
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved && !submittedData) {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.submittedAt) {
-          setSubmittedData(parsed);
-        }
-      }
-    } catch (err) {
-      console.error('Error reading localStorage', err);
-    }
   }, []);
 
   // Dynamic interaction check for each question
@@ -371,29 +345,19 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
     }
 
     try {
-      // 1. Ensure Firebase Auth Session (auto-sign-in anonymously if guest)
-      let currentFirebaseUser = auth.currentUser;
-      if (!currentFirebaseUser) {
-        try {
-          const cred = await signInAnonymously(auth);
-          currentFirebaseUser = cred.user;
-          setUser(currentFirebaseUser);
-        } catch (anonErr) {
-          console.warn("Guest sign-in note:", anonErr);
-        }
+      // 1. Validate that the user is logged in with a real account (not anonymous)
+      const currentFirebaseUser = auth.currentUser || user || getStoredAuthUser();
+      if (!currentFirebaseUser || currentFirebaseUser.isAnonymous) {
+        setIsAuthModalOpen(true);
+        setErrorMessage('Bạn phải đăng nhập tài khoản trước khi gửi khảo sát!');
+        setIsSubmitting(false);
+        return;
       }
 
       // 2. Save personal response to Firestore
-      if (currentFirebaseUser) {
-        try {
-          const userDocRef = doc(db, 'user_responses', currentFirebaseUser.uid);
-          await setDoc(userDocRef, payload);
-          console.log("✅ Saved response to user_responses/" + currentFirebaseUser.uid);
-        } catch (cloudErr) {
-          console.error("Cloud persistence error:", cloudErr);
-          handleFirestoreError(cloudErr, OperationType.WRITE, `user_responses/${currentFirebaseUser.uid}`);
-        }
-      }
+      const userDocRef = doc(db, 'user_responses', currentFirebaseUser.uid);
+      await setDoc(userDocRef, payload);
+      console.log("✅ Saved response to user_responses/" + currentFirebaseUser.uid);
 
       // 3. Sync with Firestore Global Stats using Transaction
       try {
@@ -519,31 +483,81 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
   };
 
   const handleDeleteData = async () => {
-    if (window.confirm('Bạn có chắc muốn xóa câu trả lời của bạn trên thiết bị này và trên đám mây để làm lại khảo sát mới? (Số người tham gia chung của cộng đồng vẫn được bảo toàn)')) {
-      localStorage.removeItem(STORAGE_KEY);
-      
-      // Cloud Persistence: Remove personal response from Firestore
-      if (auth.currentUser) {
-        try {
-          const userDocRef = doc(db, 'user_responses', auth.currentUser.uid);
-          await deleteDoc(userDocRef);
-        } catch (err) {
-          console.error("Failed to delete cloud response:", err);
-        }
-      }
-
-      setSubmittedData(null);
-      setAgeGroup(null);
-      setBooksPerYear(null);
-      setReadingFormats([]);
-      setFavoriteGenres([]);
-      setReadingMotivations([]);
-      setReadingBarriers([]);
-      setBuyingHabits([]);
-      setReadingEnvironments([]);
-      setEmail('');
-      setWantsNewsletter(null);
+    if (!window.confirm('Bạn có chắc muốn xóa phiếu khảo sát của bạn trên hệ thống để làm lại từ đầu? Số liệu đóng góp của bạn sẽ được hoàn trả sạch sẽ.')) {
+      return;
     }
+    localStorage.removeItem(STORAGE_KEY);
+    
+    // Cloud Persistence: Remove personal response from Firestore & decrement stats
+    const activeUser = auth.currentUser || user || getStoredAuthUser();
+    if (activeUser && !activeUser.isAnonymous) {
+      try {
+        const uid = activeUser.uid;
+        const userDocRef = doc(db, 'user_responses', uid);
+        await deleteDoc(userDocRef);
+
+        if (submittedData) {
+          const statsDocRef = doc(db, 'stats', 'global');
+          await runTransaction(db, async (t) => {
+            const snap = await t.get(statsDocRef);
+            if (!snap.exists()) return;
+            const cur = snap.data() as SurveyStatsData;
+            const updated: SurveyStatsData = {
+              ...cur,
+              totalParticipants: Math.max(0, (cur.totalParticipants || 1) - 1),
+              ageGroup: { ...(cur.ageGroup || {}) },
+              booksPerYear: { ...(cur.booksPerYear || {}) },
+              readingFormats: { ...(cur.readingFormats || {}) },
+              favoriteGenres: { ...(cur.favoriteGenres || {}) },
+              readingMotivations: { ...(cur.readingMotivations || {}) },
+              readingBarriers: { ...(cur.readingBarriers || {}) },
+              buyingHabits: { ...(cur.buyingHabits || {}) },
+              readingEnvironments: { ...(cur.readingEnvironments || {}) },
+            };
+            if (submittedData.ageGroup && updated.ageGroup[submittedData.ageGroup as keyof typeof updated.ageGroup] !== undefined) {
+              updated.ageGroup[submittedData.ageGroup as keyof typeof updated.ageGroup] = Math.max(0, updated.ageGroup[submittedData.ageGroup as keyof typeof updated.ageGroup] - 1);
+            }
+            if (submittedData.booksPerYear && updated.booksPerYear[submittedData.booksPerYear as keyof typeof updated.booksPerYear] !== undefined) {
+              updated.booksPerYear[submittedData.booksPerYear as keyof typeof updated.booksPerYear] = Math.max(0, updated.booksPerYear[submittedData.booksPerYear as keyof typeof updated.booksPerYear] - 1);
+            }
+            (submittedData.readingFormats || []).forEach(f => {
+              if (updated.readingFormats[f] !== undefined) updated.readingFormats[f] = Math.max(0, updated.readingFormats[f] - 1);
+            });
+            (submittedData.favoriteGenres || []).forEach(g => {
+              if (updated.favoriteGenres[g] !== undefined) updated.favoriteGenres[g] = Math.max(0, updated.favoriteGenres[g] - 1);
+            });
+            (submittedData.readingMotivations || []).forEach(m => {
+              if (updated.readingMotivations[m] !== undefined) updated.readingMotivations[m] = Math.max(0, updated.readingMotivations[m] - 1);
+            });
+            (submittedData.readingBarriers || []).forEach(b => {
+              if (updated.readingBarriers[b] !== undefined) updated.readingBarriers[b] = Math.max(0, updated.readingBarriers[b] - 1);
+            });
+            (submittedData.buyingHabits || []).forEach(h => {
+              if (updated.buyingHabits[h] !== undefined) updated.buyingHabits[h] = Math.max(0, updated.buyingHabits[h] - 1);
+            });
+            (submittedData.readingEnvironments || []).forEach(e => {
+              if (updated.readingEnvironments[e] !== undefined) updated.readingEnvironments[e] = Math.max(0, updated.readingEnvironments[e] - 1);
+            });
+            t.set(statsDocRef, updated);
+            setSurveyStats(updated);
+          });
+        }
+      } catch (err) {
+        console.error("Failed to delete cloud response:", err);
+      }
+    }
+
+    setSubmittedData(null);
+    setAgeGroup(null);
+    setBooksPerYear(null);
+    setReadingFormats([]);
+    setFavoriteGenres([]);
+    setReadingMotivations([]);
+    setReadingBarriers([]);
+    setBuyingHabits([]);
+    setReadingEnvironments([]);
+    setEmail('');
+    setWantsNewsletter(null);
   };
 
   return (
@@ -598,7 +612,7 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
         {/* Row 5.1: Header trang */}
         <section className="py-14 sm:py-20 border-b border-white/10 text-center px-4 sm:px-6 lg:px-8 bg-black/40 backdrop-blur-sm">
           <div className="max-w-4xl mx-auto">
-            {!user ? (
+            {!isUserLoggedIn ? (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -610,10 +624,12 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
                   </div>
                   <div>
                     <span className="font-lora font-bold block text-sm sm:text-base text-white">
-                      Bạn chưa đăng nhập tài khoản
+                      Yêu cầu đăng nhập tài khoản để làm khảo sát
                     </span>
                     <span className="font-lora text-xs text-white/80">
-                      Vui lòng đăng nhập để bắt đầu tham gia khảo sát và lưu trữ câu trả lời của bạn.
+                      {user?.isAnonymous 
+                        ? 'Bạn đang ở phiên Khách ẩn danh. Vui lòng đăng nhập tài khoản chính thức để thực hiện khảo sát.'
+                        : 'Vui lòng đăng nhập bằng Google hoặc Email để bắt đầu tham gia và ghi nhận kết quả.'}
                     </span>
                   </div>
                 </div>
@@ -626,7 +642,7 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
                   <span>Đăng nhập ngay</span>
                 </button>
               </motion.div>
-            ) : (
+            ) : user ? (
               <div className="mb-8 inline-flex flex-col sm:flex-row items-center gap-4 px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl text-white/90 text-sm">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-[#B56D4F] flex items-center justify-center text-xs font-bold border-2 border-white/20 overflow-hidden shadow-lg">
@@ -639,21 +655,17 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
                     )}
                   </div>
                   <div className="text-left">
-                    <span className="font-lora block text-xs opacity-70">Chào mừng bạn</span>
-                    <span className="font-lora font-bold text-base">{user.isAnonymous ? 'Khách ẩn danh' : (customName || user.displayName || user.email?.split('@')[0])}</span>
+                    <span className="font-lora block text-xs opacity-70">Độc giả đã xác thực</span>
+                    <span className="font-lora font-bold text-base">{customName || user.displayName || user.email?.split('@')[0]}</span>
                   </div>
                 </div>
                 
-                {user.email && !user.emailVerified && !user.isAnonymous && (
-                  <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-[10px] font-bold text-amber-200">
-                    <AlertCircle size={12} />
-                    CHƯA XÁC THỰC EMAIL
-                  </div>
-                )}
-                
-                <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 border border-green-500/40 rounded-full text-[11px] font-bold text-green-300">
+                  <ShieldCheck size={13} />
+                  ĐÃ ĐĂNG NHẬP HỢP LỆ
+                </div>
               </div>
-            )}
+            ) : null}
 
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-[0.2em] text-[#EBE5D9] bg-black/40 border border-white/25 backdrop-blur-md shadow-lg mb-4">
               <span className="font-sans">CHUYÊN ĐỀ 04 · KHẢO SÁT BẠN ĐỌC TƯƠNG TÁC</span>
@@ -690,7 +702,7 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
 
         {/* Row 5.2 & Row 5.3: Survey Body or Completed State */}
         <section className="py-12 sm:py-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {!user ? (
+          {!isUserLoggedIn ? (
             /* Login Gate when not signed in */
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -704,13 +716,13 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
 
               <div className="space-y-2">
                 <span className="text-xs uppercase tracking-[0.2em] text-[#B56D4F] font-bold font-sans">
-                  YÊU CẦU ĐĂNG NHẬP
+                  QUY ĐỊNH THAM GIA KHẢO SÁT
                 </span>
                 <h3 className="font-playfair text-2xl sm:text-3xl font-bold text-[#3A3530]">
-                  Đăng nhập để tham gia khảo sát
+                  Phải đăng nhập mới được làm khảo sát
                 </h3>
                 <p className="font-lora text-sm sm:text-base text-[#6B635A] max-w-md mx-auto leading-relaxed">
-                  Để đảm bảo tính xác thực của số liệu cộng đồng và lưu kết quả khảo sát vào tài khoản của bạn, vui lòng đăng nhập trước khi điền câu hỏi.
+                  Để đảm bảo tính xác thực của nghiên cứu cộng đồng, mỗi độc giả cần đăng nhập tài khoản trước khi thực hiện khảo sát. Mỗi tài khoản chỉ đóng góp 1 phiếu duy nhất.
                 </p>
               </div>
 
@@ -718,28 +730,36 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
               <div className="bg-[#FAF7F0] p-5 rounded-2xl border border-[#D6CDBF] text-left space-y-3 text-xs sm:text-sm font-lora text-[#3A3530]">
                 <div className="flex items-center gap-3">
                   <CheckCircle2 size={18} className="text-[#4A7C59] shrink-0" />
-                  <span>Lưu trữ an toàn phiếu khảo sát trên máy chủ Firebase</span>
+                  <span>Xác thực danh tính bạn đọc thực tế, chống spam và trùng lặp</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle2 size={18} className="text-[#4A7C59] shrink-0" />
-                  <span>Mở khóa toàn bộ biểu đồ phân tích xu hướng sau khi gửi bài</span>
+                  <span>Lưu trữ vĩnh viễn và đồng bộ câu trả lời an toàn trên Firebase Cloud</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <CheckCircle2 size={18} className="text-[#4A7C59] shrink-0" />
-                  <span>Hỗ trợ đăng nhập nhanh bằng <strong>Google</strong>, <strong>Email</strong> hoặc <strong>Khách ẩn danh</strong></span>
+                  <span>Mở khóa toàn bộ biểu đồ phân tích xu hướng ngay sau khi gửi bài</span>
                 </div>
               </div>
 
+              {user?.isAnonymous && (
+                <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 font-lora text-left flex items-start gap-2">
+                  <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                  <span>Bạn đang duyệt ở chế độ Khách ẩn danh. Vui lòng đăng nhập bằng Google hoặc Email của bạn để mở khóa bảng câu hỏi khảo sát.</span>
+                </div>
+              )}
+
               <div className="pt-2">
                 <button
+                  type="button"
                   onClick={() => setIsAuthModalOpen(true)}
                   className="w-full sm:w-auto px-8 py-4 bg-[#B56D4F] hover:bg-[#9A5A3F] text-white font-playfair font-bold text-base rounded-xl transition-all shadow-xl active:scale-95 cursor-pointer flex items-center justify-center gap-3 mx-auto"
                 >
                   <LogIn size={20} />
-                  <span>Đăng nhập ngay để bắt đầu khảo sát</span>
+                  <span>Đăng nhập ngay để làm khảo sát</span>
                 </button>
                 <p className="text-[11px] text-[#6B635A] font-lora mt-3">
-                  Nếu bạn không muốn liên kết email, bạn có thể chọn "Tiếp tục như Khách ẩn danh" trong cửa sổ đăng nhập.
+                  Hỗ trợ đăng nhập nhanh bằng tài khoản Google hoặc tài khoản Email cá nhân.
                 </p>
               </div>
             </motion.div>
