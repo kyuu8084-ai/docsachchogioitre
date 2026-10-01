@@ -16,6 +16,8 @@ export interface SurveyStatsData {
   favoriteGenres: Record<string, number>;
   readingMotivations: Record<string, number>;
   readingBarriers: Record<string, number>;
+  buyingHabits: Record<string, number>;
+  readingEnvironments: Record<string, number>;
 }
 
 export const INITIAL_SURVEY_STATS: SurveyStatsData = {
@@ -58,5 +60,19 @@ export const INITIAL_SURVEY_STATS: SurveyStatsData = {
     'Nghiện mạng xã hội, game, video ngắn lướt vô thức': 0,
     'Không biết chọn cuốn sách nào phù hợp với bản thân': 0,
     'Cảm thấy “khó vào”, dễ buồn ngủ sau vài trang đầu': 0,
+  },
+  buyingHabits: {
+    'Mua sách mới tại nhà sách/online': 0,
+    'Mua sách cũ/second-hand': 0,
+    'Mượn từ thư viện/bạn bè': 0,
+    'Đọc bản free/lậu trên mạng': 0,
+    'Thuê sách theo tháng (app)': 0,
+  },
+  readingEnvironments: {
+    'Tại nhà (phòng ngủ, ban công)': 0,
+    'Quán cà phê yên tĩnh': 0,
+    'Trên phương tiện công cộng (bus, tàu)': 0,
+    'Thư viện/không gian học tập': 0,
+    'Giờ nghỉ giải lao tại trường/chỗ làm': 0,
   },
 };

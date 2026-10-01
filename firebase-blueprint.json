@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "confession": {
+      "title": "Confession",
+      "description": "A shared reading-related confession or thought from a user.",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The content of the confession.",
+          "maxLength": 500
+        },
+        "author": {
+          "type": "string",
+          "description": "The pen name of the author.",
+          "maxLength": 50
+        },
+        "date": {
+          "type": "string",
+          "description": "Human readable date."
+        },
+        "likes": {
+          "type": "integer",
+          "description": "Like count."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Primary sort key (Server Timestamp)."
+        },
+        "isArchived": {
+          "type": "boolean",
+          "description": "Flag for soft-deletion or archiving."
+        }
+      },
+      "required": ["text", "author", "likes", "createdAt"]
+    },
+    "surveyStats": {
+      "title": "Survey Stats",
+      "description": "Aggregated statistics for the reading survey.",
+      "type": "object",
+      "properties": {
+        "totalParticipants": { "type": "integer" },
+        "ageGroup": { "type": "object" },
+        "booksPerYear": { "type": "object" },
+        "readingFormats": { "type": "object" },
+        "favoriteGenres": { "type": "object" },
+        "readingMotivations": { "type": "object" },
+        "readingBarriers": { "type": "object" }
+      },
+      "required": ["totalParticipants"]
+    },
+    "userProfile": {
+      "title": "User Profile",
+      "description": "Extended user profile information.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string", "maxLength": 100 },
+        "avatarBase64": { "type": "string", "description": "Base64 encoded avatar image." },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "confessions": {
+      "schema": "confession",
+      "description": "Global collection of reader confessions."
+    },
+    "stats": {
+      "schema": "surveyStats",
+      "description": "Singleton-like collection for aggregated survey statistics."
+    },
+    "users": {
+      "schema": "userProfile",
+      "description": "User profile documents keyed by UID."
+    }
+  }
+}

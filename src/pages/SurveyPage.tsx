@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { 
+  LogIn,
+  User as UserIcon,
   CheckCircle2, 
   ShieldCheck, 
   RotateCcw, 
@@ -23,8 +25,13 @@ import {
   Award,
   PartyPopper
 } from 'lucide-react';
+import { doc, onSnapshot, setDoc, runTransaction, getDoc, deleteDoc } from 'firebase/firestore';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { db, auth } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/firestoreErrorHandler';
 import VintageSeparator from '../components/VintageSeparator';
 import SurveyAnalysisCharts from '../components/SurveyAnalysisCharts';
+import AuthModal from '../components/AuthModal';
 import { INITIAL_SURVEY_STATS, SurveyStatsData } from '../data/surveyStatsData';
 import { SurveyAnswer, PageId } from '../types';
 
@@ -42,45 +49,31 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
   const [isMuted, setIsMuted] = useState<boolean>(true);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Survey aggregated statistics with local persistence (localStorage) & backend synchronization
-  const [surveyStats, setSurveyStats] = useState<SurveyStatsData>(() => {
-    try {
-      const saved = localStorage.getItem(STATS_STORAGE_KEY);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (err) {
-      console.error('Error loading survey stats from localStorage', err);
-    }
-    return INITIAL_SURVEY_STATS;
-  });
+  // Survey aggregated statistics
+  const [surveyStats, setSurveyStats] = useState<SurveyStatsData>(INITIAL_SURVEY_STATS);
+  const [isLoadingStats, setIsLoadingStats] = useState<boolean>(true);
 
-  // Sync with backend API on mount
+  // Sync with Firebase Firestore with real-time updates
   useEffect(() => {
-    // Fetch from multi-device backend server to synchronize latest community count
-    fetch('/api/survey/stats')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.stats) {
-          setSurveyStats((current) => {
-            // Keep the maximum between local and server to guarantee count never decreases
-            const mergedTotal = Math.max(current.totalParticipants, data.stats.totalParticipants);
-            const mergedStats: SurveyStatsData = {
-              ...data.stats,
-              totalParticipants: mergedTotal,
-            };
-            try {
-              localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(mergedStats));
-            } catch (e) {
-              console.error('Error caching survey stats', e);
-            }
-            return mergedStats;
-          });
-        }
-      })
-      .catch((err) => {
-        console.warn('Backend survey sync note (operating in offline/local mode):', err);
-      });
+    const docRef = doc(db, 'stats', 'global');
+    
+    // Use onSnapshot for real-time updates and more reliable initial fetch
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setSurveyStats(docSnap.data() as SurveyStatsData);
+      } else {
+        // Initialize if not exists - only do this if we are certain it's missing
+        setDoc(docRef, INITIAL_SURVEY_STATS).catch(err => {
+          console.error("Failed to initialize stats:", err);
+        });
+      }
+      setIsLoadingStats(false);
+    }, (err) => {
+      handleFirestoreError(err, OperationType.LIST, 'stats/global');
+      setIsLoadingStats(false);
+    });
+    
+    return () => unsubscribe();
   }, []);
 
   const toggleVideoPlayback = () => {
@@ -108,11 +101,98 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
   const [favoriteGenres, setFavoriteGenres] = useState<string[]>([]);
   const [readingMotivations, setReadingMotivations] = useState<string[]>([]);
   const [readingBarriers, setReadingBarriers] = useState<string[]>([]);
+  const [buyingHabits, setBuyingHabits] = useState<string[]>([]);
+  const [readingEnvironments, setReadingEnvironments] = useState<string[]>([]);
   const [wantsNewsletter, setWantsNewsletter] = useState<boolean>(false);
   const [email, setEmail] = useState<string>('');
   const [showCelebrationModal, setShowCelebrationModal] = useState<boolean>(false);
+  const [isFirebaseOffline, setIsFirebaseOffline] = useState<boolean>(false);
+  const [isAuthDisabled, setIsAuthDisabled] = useState<boolean>(false);
+  const [isSyncingWithCloud, setIsSyncingWithCloud] = useState<boolean>(false);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [customAvatar, setCustomAvatar] = useState<string | null>(null);
+  const [customName, setCustomName] = useState<string | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  // Dynamic progress calculation based on completed questions (7 questions total)
+  useEffect(() => {
+    const handleConnectionFail = () => setIsFirebaseOffline(true);
+    const handleAuthFail = () => setIsAuthDisabled(true);
+    
+    window.addEventListener('firebase-connection-failed', handleConnectionFail);
+    window.addEventListener('firebase-auth-disabled', handleAuthFail);
+    
+    return () => {
+      window.removeEventListener('firebase-connection-failed', handleConnectionFail);
+      window.removeEventListener('firebase-auth-disabled', handleAuthFail);
+    };
+  }, []);
+
+  // Sync with Cloud: Anonymous User Auth + Firestore personal response
+  useEffect(() => {
+    let unsubscribeProfile: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+        unsubscribeProfile = null;
+      }
+
+      if (currentUser) {
+        setIsSyncingWithCloud(true);
+        
+        // Listen to personal profile (for avatar and name)
+        unsubscribeProfile = onSnapshot(doc(db, 'users', currentUser.uid), (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setCustomAvatar(data.avatarBase64 || null);
+            setCustomName(data.displayName || null);
+          } else {
+            setCustomAvatar(null);
+            setCustomName(null);
+          }
+        });
+
+        try {
+          const userDocRef = doc(db, 'user_responses', currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            const cloudData = userDoc.data() as SurveyAnswer;
+            setSubmittedData(cloudData);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData));
+          }
+        } catch (err) {
+          console.error("Failed to sync personal survey from cloud:", err);
+        } finally {
+          setIsSyncingWithCloud(false);
+        }
+      } else {
+        setCustomAvatar(null);
+        setCustomName(null);
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) unsubscribeProfile();
+    };
+  }, []);
+
+  // Load from localStorage on mount (initial fast load before cloud sync)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved && !submittedData) {
+        setSubmittedData(JSON.parse(saved));
+      }
+    } catch (err) {
+      console.error('Error reading localStorage', err);
+    }
+  }, []);
+
+  // Dynamic progress calculation based on completed questions (9 questions total)
   const completedQuestionsCount = [
     Boolean(ageGroup),
     Boolean(booksPerYear),
@@ -120,23 +200,13 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
     favoriteGenres.length > 0,
     readingMotivations.length > 0,
     readingBarriers.length > 0,
+    buyingHabits.length > 0,
+    readingEnvironments.length > 0,
     !wantsNewsletter || Boolean(email.trim()),
   ].filter(Boolean).length;
 
-  const totalQuestions = 7;
+  const totalQuestions = 9;
   const surveyProgressPct = Math.round((completedQuestionsCount / totalQuestions) * 100);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setSubmittedData(JSON.parse(saved));
-      }
-    } catch (err) {
-      console.error('Error reading localStorage', err);
-    }
-  }, []);
 
   const handleFormatToggle = (format: string) => {
     if (readingFormats.includes(format)) {
@@ -175,7 +245,23 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleBuyingToggle = (item: string) => {
+    if (buyingHabits.includes(item)) {
+      setBuyingHabits(buyingHabits.filter((h) => h !== item));
+    } else {
+      setBuyingHabits([...buyingHabits, item]);
+    }
+  };
+
+  const handleEnvironmentToggle = (item: string) => {
+    if (readingEnvironments.includes(item)) {
+      setReadingEnvironments(readingEnvironments.filter((e) => e !== item));
+    } else {
+      setReadingEnvironments([...readingEnvironments, item]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (readingFormats.length === 0) {
       setErrorMessage('Vui lòng chọn ít nhất 1 hình thức đọc sách!');
@@ -197,8 +283,9 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
       favoriteGenres,
       readingMotivations,
       readingBarriers,
+      buyingHabits,
+      readingEnvironments,
       wantsNewsletter,
-      email: wantsNewsletter ? email.trim() : undefined,
       submittedAt: new Date().toLocaleDateString('vi-VN', {
         day: '2-digit',
         month: '2-digit',
@@ -208,10 +295,22 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
       }),
     };
 
+    if (wantsNewsletter && email.trim()) {
+      payload.email = email.trim();
+    }
+
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
       setSubmittedData(payload);
       setErrorMessage('');
+
+      // Cloud Persistence: Save personal response to Firestore
+      if (auth.currentUser) {
+        const userDocRef = doc(db, 'user_responses', auth.currentUser.uid);
+        setDoc(userDocRef, payload).catch(err => {
+          console.error("Failed to persist personal survey to cloud:", err);
+        });
+      }
 
       // Gửi kết quả đến Formspree nếu người dùng muốn nhận thư gợi ý
       if (wantsNewsletter && email.trim()) {
@@ -236,86 +335,70 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
         }).catch(err => console.error('Formspree error:', err));
       }
 
-      // Gửi kết quả lên server backend để liên kết với các thiết bị khác
-      fetch('/api/survey/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ageGroup,
-          booksPerYear,
-          readingFormats,
-          favoriteGenres,
-          readingMotivations,
-          readingBarriers,
-        }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && data.stats) {
-            setSurveyStats(data.stats);
-            localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(data.stats));
-          }
-        })
-        .catch((err) => {
-          console.warn('Backend submit fallback to local update:', err);
-        });
-
-      // Cập nhật số người tham gia khảo sát (+1) ngay tại máy khách
-      setSurveyStats((prevStats) => {
-        const updatedStats: SurveyStatsData = {
-          ...prevStats,
-          totalParticipants: prevStats.totalParticipants + 1,
-          ageGroup: {
-            ...prevStats.ageGroup,
-            [ageGroup as keyof typeof prevStats.ageGroup]: (prevStats.ageGroup[ageGroup as keyof typeof prevStats.ageGroup] || 0) + 1,
-          },
-          booksPerYear: {
-            ...prevStats.booksPerYear,
-            [booksPerYear as keyof typeof prevStats.booksPerYear]: (prevStats.booksPerYear[booksPerYear as keyof typeof prevStats.booksPerYear] || 0) + 1,
-          },
-          readingFormats: {
-            ...prevStats.readingFormats,
-          },
-          favoriteGenres: {
-            ...prevStats.favoriteGenres,
-          },
-          readingMotivations: {
-            ...prevStats.readingMotivations,
-          },
-          readingBarriers: {
-            ...prevStats.readingBarriers,
-          },
-        };
-
-        // Increment selected formats
-        readingFormats.forEach((fmt) => {
-          updatedStats.readingFormats[fmt] = (updatedStats.readingFormats[fmt] || 0) + 1;
-        });
-
-        // Increment selected genres
-        favoriteGenres.forEach((gnr) => {
-          updatedStats.favoriteGenres[gnr] = (updatedStats.favoriteGenres[gnr] || 0) + 1;
-        });
-
-        // Increment motivations
-        readingMotivations.forEach((mot) => {
-          updatedStats.readingMotivations[mot] = (updatedStats.readingMotivations[mot] || 0) + 1;
-        });
-
-        // Increment barriers
-        readingBarriers.forEach((barr) => {
-          updatedStats.readingBarriers[barr] = (updatedStats.readingBarriers[barr] || 0) + 1;
-        });
-
-        // Save updated aggregated statistics to localStorage
+      // Sync with Firestore using Transaction
+      const updateFirestoreStats = async () => {
         try {
-          localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(updatedStats));
-        } catch (e) {
-          console.error('Error saving updated survey stats', e);
-        }
+          const docRef = doc(db, 'stats', 'global');
+          await runTransaction(db, async (transaction) => {
+            const sfDoc = await transaction.get(docRef);
+            if (!sfDoc.exists()) {
+              transaction.set(docRef, INITIAL_SURVEY_STATS);
+              return;
+            }
 
-        return updatedStats;
-      });
+            const current = sfDoc.data() as SurveyStatsData;
+            const updated: SurveyStatsData = {
+              ...current,
+              totalParticipants: current.totalParticipants + 1,
+              ageGroup: {
+                ...current.ageGroup,
+                [ageGroup]: (current.ageGroup[ageGroup as keyof typeof current.ageGroup] || 0) + 1,
+              },
+              booksPerYear: {
+                ...current.booksPerYear,
+                [booksPerYear]: (current.booksPerYear[booksPerYear as keyof typeof current.booksPerYear] || 0) + 1,
+              },
+              readingFormats: { ...current.readingFormats },
+              favoriteGenres: { ...current.favoriteGenres },
+              readingMotivations: { ...current.readingMotivations },
+              readingBarriers: { ...current.readingBarriers },
+              buyingHabits: { ...current.buyingHabits },
+              readingEnvironments: { ...current.readingEnvironments },
+            };
+
+            readingFormats.forEach((fmt) => {
+              updated.readingFormats[fmt] = (updated.readingFormats[fmt] || 0) + 1;
+            });
+
+            favoriteGenres.forEach((gnr) => {
+              updated.favoriteGenres[gnr] = (updated.favoriteGenres[gnr] || 0) + 1;
+            });
+
+            readingMotivations.forEach((mot) => {
+              updated.readingMotivations[mot] = (updated.readingMotivations[mot] || 0) + 1;
+            });
+
+            readingBarriers.forEach((barr) => {
+              updated.readingBarriers[barr] = (updated.readingBarriers[barr] || 0) + 1;
+            });
+
+            buyingHabits.forEach((hab) => {
+              updated.buyingHabits[hab] = (updated.buyingHabits[hab] || 0) + 1;
+            });
+
+            readingEnvironments.forEach((env) => {
+              updated.readingEnvironments[env] = (updated.readingEnvironments[env] || 0) + 1;
+            });
+
+            transaction.update(docRef, updated as any);
+            setSurveyStats(updated);
+          });
+        } catch (e) {
+          handleFirestoreError(e, OperationType.WRITE, 'stats/global');
+        }
+      };
+
+      updateFirestoreStats();
 
       // Confetti celebratory burst & Show Framer Motion Celebratory Modal
       confetti({
@@ -334,12 +417,36 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
   };
 
   const handleReset = () => {
+    if (submittedData) {
+      // Re-populate form fields from submitted data for editing
+      setAgeGroup(submittedData.ageGroup || '');
+      setBooksPerYear(submittedData.booksPerYear || '');
+      setReadingFormats(submittedData.readingFormats || []);
+      setFavoriteGenres(submittedData.favoriteGenres || []);
+      setReadingMotivations(submittedData.readingMotivations || []);
+      setReadingBarriers(submittedData.readingBarriers || []);
+      setBuyingHabits(submittedData.buyingHabits || []);
+      setReadingEnvironments(submittedData.readingEnvironments || []);
+      setWantsNewsletter(submittedData.wantsNewsletter || false);
+      setEmail(submittedData.email || '');
+    }
     setSubmittedData(null);
   };
 
-  const handleDeleteData = () => {
-    if (window.confirm('Bạn có chắc muốn xóa câu trả lời của bạn trên thiết bị này để làm lại khảo sát mới? (Số người tham gia chung của cộng đồng vẫn được bảo toàn)')) {
+  const handleDeleteData = async () => {
+    if (window.confirm('Bạn có chắc muốn xóa câu trả lời của bạn trên thiết bị này và trên đám mây để làm lại khảo sát mới? (Số người tham gia chung của cộng đồng vẫn được bảo toàn)')) {
       localStorage.removeItem(STORAGE_KEY);
+      
+      // Cloud Persistence: Remove personal response from Firestore
+      if (auth.currentUser) {
+        try {
+          const userDocRef = doc(db, 'user_responses', auth.currentUser.uid);
+          await deleteDoc(userDocRef);
+        } catch (err) {
+          console.error("Failed to delete cloud response:", err);
+        }
+      }
+
       setSubmittedData(null);
       setAgeGroup('');
       setBooksPerYear('');
@@ -347,6 +454,8 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
       setFavoriteGenres([]);
       setReadingMotivations([]);
       setReadingBarriers([]);
+      setBuyingHabits([]);
+      setReadingEnvironments([]);
       setEmail('');
       setWantsNewsletter(false);
     }
@@ -354,6 +463,11 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
 
   return (
     <div className="relative w-full min-h-[100svh] bg-black text-[#3A3530] overflow-x-hidden">
+      <AuthModal 
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
+
       {/* BACKGROUND VIDEO: Exact MP4 positioned full-page with high visibility */}
       <video
         ref={videoRef}
@@ -399,6 +513,95 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
         {/* Row 5.1: Header trang */}
         <section className="py-14 sm:py-20 border-b border-white/10 text-center px-4 sm:px-6 lg:px-8 bg-black/40 backdrop-blur-sm">
           <div className="max-w-4xl mx-auto">
+            {!user && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-10 p-8 bg-white/10 backdrop-blur-md border-2 border-[#B56D4F] rounded-3xl text-center shadow-2xl"
+              >
+                <div className="w-16 h-16 bg-[#B56D4F] rounded-2xl flex items-center justify-center mx-auto mb-4 text-white shadow-lg">
+                  <LogIn size={32} />
+                </div>
+                <h3 className="font-playfair text-xl sm:text-2xl font-bold text-white mb-2">Chào bạn! Bạn chưa đăng nhập</h3>
+                <p className="font-lora text-white/80 text-sm sm:text-base max-w-md mx-auto mb-6">
+                  Vui lòng đăng nhập để bắt đầu tham gia khảo sát và xem kết quả phân tích thói quen đọc sách của bạn.
+                </p>
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="px-8 py-3.5 bg-[#B56D4F] hover:bg-[#9A5A3F] text-white text-sm font-bold uppercase tracking-widest rounded-xl transition-all shadow-xl active:scale-95 cursor-pointer"
+                >
+                  Đăng nhập ngay
+                </button>
+              </motion.div>
+            )}
+
+            {user && (
+              <div className="mb-10 inline-flex flex-col sm:flex-row items-center gap-4 px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl text-white/90 text-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#B56D4F] flex items-center justify-center text-xs font-bold border-2 border-white/20 overflow-hidden shadow-lg">
+                    {customAvatar ? (
+                      <img src={customAvatar} alt="" className="w-full h-full object-cover" />
+                    ) : user.photoURL ? (
+                      <img src={user.photoURL} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      user.displayName?.charAt(0) || <UserIcon size={18}/>
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <span className="font-lora block text-xs opacity-70">Chào mừng bạn</span>
+                    <span className="font-lora font-bold text-base">{user.isAnonymous ? 'Khách ẩn danh' : (customName || user.displayName || user.email?.split('@')[0])}</span>
+                  </div>
+                </div>
+                
+                {user.email && !user.emailVerified && !user.isAnonymous && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-[10px] font-bold text-amber-200">
+                    <AlertCircle size={12} />
+                    CHƯA XÁC THỰC EMAIL
+                  </div>
+                )}
+                
+                <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              </div>
+            )}
+
+            {(isFirebaseOffline || isAuthDisabled) && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mb-10 p-6 bg-amber-50 border-2 border-amber-200 text-[#7F5539] rounded-3xl text-sm font-lora shadow-xl"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-200 flex items-center justify-center text-amber-700">
+                    <AlertCircle size={24} />
+                  </div>
+                  <strong className="text-lg font-playfair">
+                    {isAuthDisabled ? '⚠️ Cần kích hoạt Đăng nhập Ẩn danh' : '⚠️ Đang thiết lập Cơ sở dữ liệu'}
+                  </strong>
+                </div>
+                <div className="space-y-3 text-left leading-relaxed">
+                  {isAuthDisabled ? (
+                    <>
+                      <p>Để lưu trữ lựa chọn của bạn vĩnh viễn, bạn vui lòng kích hoạt <b>Anonymous Auth</b>:</p>
+                      <ol className="list-decimal list-inside space-y-2 ml-2">
+                        <li>Vào <b>Firebase Console</b> {'>'} <b>Authentication</b> {'>'} <b>Sign-in method</b>.</li>
+                        <li>Nhấn <b>Add new provider</b> và chọn <b>Anonymous</b>.</li>
+                        <li>Bật công tắc <b>Enable</b> và nhấn <b>Save</b>.</li>
+                      </ol>
+                    </>
+                  ) : (
+                    <>
+                      <p>Ứng dụng đang gặp khó khăn khi kết nối với Firebase. Để kích hoạt tính năng lưu trữ vĩnh viễn, bạn vui lòng thực hiện <b>3 bước sau</b>:</p>
+                      <ol className="list-decimal list-inside space-y-2 ml-2">
+                        <li>Vào <b>Firebase Console</b> (console.firebase.google.com).</li>
+                        <li>Chọn Project <b>sachhay-ece64</b> {'>'} <b>Firestore Database</b>.</li>
+                        <li>Nhấn nút <b>"Create Database"</b>, chọn <b>"Start in production mode"</b> và nhấn <b>"Done"</b>.</li>
+                      </ol>
+                    </>
+                  )}
+                  <p className="pt-2 italic opacity-80 text-xs">Sau khi hoàn thành, hãy làm mới (F5) trang này để hệ thống tự động kết nối lại.</p>
+                </div>
+              </motion.div>
+            )}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-[0.2em] text-[#EBE5D9] bg-black/40 border border-white/25 backdrop-blur-md shadow-lg mb-4">
               <span className="font-sans">CHUYÊN ĐỀ 04 · KHẢO SÁT BẠN ĐỌC TƯƠNG TÁC</span>
             </div>
@@ -434,7 +637,14 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
 
         {/* Row 5.2 & Row 5.3: Survey Body or Completed State */}
         <section className="py-12 sm:py-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {submittedData ? (
+          {!user ? (
+            <div className="vintage-card-bg bg-[#FAF7F0]/95 backdrop-blur-md rounded-3xl p-12 sm:p-20 border-2 border-dashed border-[#D6CDBF] text-center flex flex-col items-center justify-center space-y-6">
+              <div className="w-20 h-20 rounded-full bg-[#EBE5D9] text-[#6B635A] flex items-center justify-center opacity-50">
+                <ShieldCheck size={48} />
+              </div>
+              <h3 className="font-playfair text-2xl text-[#6B635A]">Vui lòng đăng nhập để xem nội dung</h3>
+            </div>
+          ) : submittedData ? (
             /* Row 5.3: Trạng thái “Đã làm khảo sát” - Max width 5xl for spacious chart breathing room */
             <div className="vintage-card-bg bg-[#FAF7F0]/95 backdrop-blur-md rounded-3xl p-6 sm:p-10 md:p-12 border-2 border-[#D6CDBF] shadow-2xl max-w-5xl mx-auto text-center relative overflow-hidden">
               {/* Vintage Postal Stamp Seal */}
@@ -540,11 +750,20 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
 
               {/* BIỂU ĐỒ PHÂN TÍCH CHI TIẾT TỪNG CÂU TRẢ LỜI & SỐ NGƯỜI THAM GIA */}
               <div className="mt-14 pt-10 border-t-2 border-[#D6CDBF]/80 text-left">
-                <SurveyAnalysisCharts
-                  stats={surveyStats}
-                  userAnswer={submittedData}
-                  onNavigate={onNavigate}
-                />
+                {isLoadingStats || isSyncingWithCloud ? (
+                  <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                    <div className="w-12 h-12 border-4 border-[#B56D4F]/20 border-t-[#B56D4F] rounded-full animate-spin" />
+                    <p className="font-lora text-sm text-[#6B635A]">
+                      {isSyncingWithCloud ? 'Đang đồng bộ dữ liệu của bạn...' : 'Đang cập nhật dữ liệu cộng đồng...'}
+                    </p>
+                  </div>
+                ) : (
+                  <SurveyAnalysisCharts
+                    stats={surveyStats}
+                    userAnswer={submittedData}
+                    onNavigate={onNavigate}
+                  />
+                )}
               </div>
             </div>
           ) : (
@@ -831,10 +1050,88 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
                     </div>
                   </div>
 
-                  {/* Câu 7: Email nhận bản tin */}
+                  {/* New Câu 7: Buying Habits */}
+                  <div>
+                    <div className="flex items-baseline justify-between mb-3">
+                      <label className="font-playfair text-base sm:text-lg font-bold text-[#3A3530]">
+                        7. Bạn thường sở hữu sách thông qua hình thức nào:
+                      </label>
+                      <span className="text-xs text-[#6B635A] font-lora">(Chọn nhiều)</span>
+                    </div>
+                    <div className="space-y-2.5">
+                      {[
+                        'Mua sách mới tại nhà sách/online',
+                        'Mua sách cũ/second-hand',
+                        'Mượn từ thư viện/bạn bè',
+                        'Đọc bản free/lậu trên mạng',
+                        'Thuê sách theo tháng (app)',
+                      ].map((hab) => {
+                        const isChecked = buyingHabits.includes(hab);
+                        return (
+                          <label
+                            key={hab}
+                            className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer font-lora text-sm transition-all ${
+                              isChecked
+                                ? 'bg-[#FAF7F0] border-[#B56D4F] text-[#B56D4F] font-medium shadow-2xs'
+                                : 'bg-[#FAF7F0]/60 border-[#D6CDBF] text-[#3A3530] hover:bg-[#FAF7F0]'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleBuyingToggle(hab)}
+                              className="accent-[#B56D4F] w-4 h-4 cursor-pointer"
+                            />
+                            <span>{hab}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* New Câu 8: Reading Environments */}
+                  <div>
+                    <div className="flex items-baseline justify-between mb-3">
+                      <label className="font-playfair text-base sm:text-lg font-bold text-[#3A3530]">
+                        8. Không gian đọc sách lý tưởng của bạn:
+                      </label>
+                      <span className="text-xs text-[#6B635A] font-lora">(Chọn nhiều)</span>
+                    </div>
+                    <div className="space-y-2.5">
+                      {[
+                        'Tại nhà (phòng ngủ, ban công)',
+                        'Quán cà phê yên tĩnh',
+                        'Trên phương tiện công cộng (bus, tàu)',
+                        'Thư viện/không gian học tập',
+                        'Giờ nghỉ giải lao tại trường/chỗ làm',
+                      ].map((env) => {
+                        const isChecked = readingEnvironments.includes(env);
+                        return (
+                          <label
+                            key={env}
+                            className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer font-lora text-sm transition-all ${
+                              isChecked
+                                ? 'bg-[#FAF7F0] border-[#6B7A6E] text-[#6B7A6E] font-medium shadow-2xs'
+                                : 'bg-[#FAF7F0]/60 border-[#D6CDBF] text-[#3A3530] hover:bg-[#FAF7F0]'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleEnvironmentToggle(env)}
+                              className="accent-[#6B7A6E] w-4 h-4 cursor-pointer"
+                            />
+                            <span>{env}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Câu 9: Email nhận bản tin */}
                   <div className="border-t border-[#D6CDBF] pt-6">
                     <label className="font-playfair text-base sm:text-lg font-bold text-[#3A3530] block mb-2">
-                      7. Bạn có muốn nhận thư gợi ý sách hay mỗi tháng qua email?
+                      9. Bạn có muốn nhận thư gợi ý sách hay mỗi tháng qua email?
                     </label>
                     <div className="flex items-center gap-6 mb-3">
                       <label className="flex items-center gap-2 cursor-pointer font-lora text-sm">

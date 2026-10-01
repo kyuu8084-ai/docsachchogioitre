@@ -1,6 +1,20 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Send, Heart, Quote, X, Plus, ArrowRight } from 'lucide-react';
+import { 
+  collection, 
+  addDoc, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  serverTimestamp, 
+  updateDoc, 
+  doc, 
+  increment,
+  Timestamp
+} from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { handleFirestoreError, OperationType } from '../lib/firestoreErrorHandler';
 import VintageSeparator from './VintageSeparator';
 
 interface Confession {
@@ -23,12 +37,17 @@ export default function ConfessionCorner() {
   const [displayedTitle, setDisplayedTitle] = useState('');
 
   useEffect(() => {
-    fetch('/api/confessions')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setConfessions(data.confessions);
-      })
-      .catch(err => console.error('Fetch confessions error:', err));
+    const q = query(collection(db, 'confessions'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Confession[];
+      setConfessions(docs);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'confessions');
+    });
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -47,20 +66,18 @@ export default function ConfessionCorner() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/confessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: newText, author: newAuthor.trim() }),
+      await addDoc(collection(db, 'confessions'), {
+        text: newText,
+        author: newAuthor.trim() || 'Bạn trẻ ẩn danh',
+        date: new Date().toISOString().split('T')[0],
+        likes: 0,
+        createdAt: serverTimestamp()
       });
-      const data = await res.json();
-      if (data.success) {
-        setConfessions([data.confession, ...confessions]);
-        setNewText('');
-        setNewAuthor('');
-        setIsModalOpen(false);
-      }
+      setNewText('');
+      setNewAuthor('');
+      setIsModalOpen(false);
     } catch (err) {
-      console.error('Post confession error:', err);
+      handleFirestoreError(err, OperationType.CREATE, 'confessions');
     } finally {
       setIsSubmitting(false);
     }
@@ -68,19 +85,12 @@ export default function ConfessionCorner() {
 
   const handleLike = async (id: string) => {
     try {
-      const res = await fetch('/api/confessions/like', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
+      const docRef = doc(db, 'confessions', id);
+      await updateDoc(docRef, {
+        likes: increment(1)
       });
-      const data = await res.json();
-      if (data.success) {
-        setConfessions(confessions.map(c => 
-          c.id === id ? { ...c, likes: data.likes } : c
-        ));
-      }
     } catch (err) {
-      console.error('Like confession error:', err);
+      handleFirestoreError(err, OperationType.UPDATE, `confessions/${id}`);
     }
   };
 

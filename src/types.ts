@@ -63,6 +63,8 @@ export interface SurveyAnswer {
   favoriteGenres: string[];
   readingMotivations: string[];
   readingBarriers: string[];
+  buyingHabits: string[];
+  readingEnvironments: string[];
   wantsNewsletter: boolean;
   email?: string;
   submittedAt: string;

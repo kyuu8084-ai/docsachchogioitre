@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
-import { BookOpen, Menu, X, ArrowUpRight, Library } from 'lucide-react';
+import { BookOpen, Menu, X, ArrowUpRight, Library, User, LogOut, ChevronDown, LogIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageId } from '../types';
 import MyBookshelf, { BOOKSHELF_SYNC_EVENT } from './MyBookshelf';
+import AuthModal from './AuthModal';
+import ProfileModal from './ProfileModal';
+import { auth, db } from '../lib/firebase';
+import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 interface HeaderProps {
   currentPage: PageId;
@@ -14,6 +19,12 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isBookshelfOpen, setIsBookshelfOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [customAvatar, setCustomAvatar] = useState<string | null>(null);
+  const [customName, setCustomName] = useState<string | null>(null);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [bookmarkCount, setBookmarkCount] = useState(0);
 
   // Sync scroll
@@ -23,6 +34,42 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Listen to auth changes and fetch custom avatar
+  useEffect(() => {
+    let unsubscribeSnapshot: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = null;
+      }
+
+      if (currentUser) {
+        // Listen to Firestore for custom profile data
+        unsubscribeSnapshot = onSnapshot(doc(db, 'users', currentUser.uid), (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setCustomAvatar(data.avatarBase64 || null);
+            setCustomName(data.displayName || null);
+          } else {
+            setCustomAvatar(null);
+            setCustomName(null);
+          }
+        });
+      } else {
+        setCustomAvatar(null);
+        setCustomName(null);
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
+    };
   }, []);
 
   // Sync bookmark count
@@ -138,6 +185,83 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
 
           {/* Col 3: Tools, CTA & Mobile Hamburger */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* User Profile / Auth Trigger */}
+            <div className="relative">
+              {user ? (
+                <div className="flex items-center">
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className={`flex items-center gap-2 px-2 py-1.5 rounded-xl transition-all cursor-pointer ${
+                      isDarkTone ? 'hover:bg-white/10' : 'hover:bg-[#EBE5D9]'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-[#B56D4F] flex items-center justify-center text-white text-xs font-bold overflow-hidden border border-white/20 shadow-sm">
+                      {customAvatar ? (
+                        <img src={customAvatar} alt={user.displayName || 'User'} className="w-full h-full object-cover" />
+                      ) : user.photoURL ? (
+                        <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full object-cover" />
+                      ) : (
+                        user.displayName ? user.displayName.charAt(0).toUpperCase() : <User size={16} />
+                      )}
+                    </div>
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {isUserMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl border border-[#D6CDBF] overflow-hidden py-2"
+                      >
+                        <div className="px-4 py-3 border-b border-[#F5F1E8] mb-1">
+                          <p className="text-xs font-bold text-[#6B635A] uppercase tracking-widest mb-1">Tài khoản</p>
+                          <p className="text-sm font-semibold text-[#3A3530] truncate">
+                            {user.isAnonymous ? 'Khách ẩn danh' : (customName || user.displayName || user.email)}
+                          </p>
+                        </div>
+                        
+                        <button
+                          onClick={() => {
+                            setIsProfileModalOpen(true);
+                            setIsUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#3A3530] hover:bg-[#F5F1E8] transition-colors cursor-pointer"
+                        >
+                          <User size={16} />
+                          <span>Chỉnh sửa hồ sơ</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            signOut(auth);
+                            setIsUserMenuOpen(false);
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                        >
+                          <LogOut size={16} />
+                          <span>Đăng xuất</span>
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer ${
+                    isDarkTone 
+                      ? 'bg-white/10 text-white hover:bg-white/20' 
+                      : 'bg-[#EBE5D9] text-[#3A3530] hover:bg-[#D6CDBF]'
+                  }`}
+                >
+                  <LogIn size={16} />
+                  <span className="hidden sm:inline">Đăng nhập</span>
+                </button>
+              )}
+            </div>
+
             {/* My Bookshelf Trigger */}
             <button
               onClick={() => setIsBookshelfOpen(true)}
@@ -161,20 +285,7 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
               </AnimatePresence>
             </button>
 
-            {/* CTA Survey button */}
-            <button
-              onClick={() => handleLinkClick('survey')}
-              className={`hidden md:inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 text-sm font-medium rounded-lg transition-all cursor-pointer ${
-                currentPage === 'survey'
-                  ? 'bg-[#9A5A3F] text-white shadow-sm ring-2 ring-[#B56D4F]/40'
-                  : 'bg-[#B56D4F] text-white hover:bg-[#9A5A3F] shadow-xs active:scale-95'
-              }`}
-            >
-              <span>Làm khảo sát</span>
-              <ArrowUpRight size={15} />
-            </button>
-
-            {/* Mobile Toggle */}
+            {/* My Bookshelf Trigger */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className={`lg:hidden p-2 rounded-lg transition-colors cursor-pointer ${
@@ -195,6 +306,19 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
         isOpen={isBookshelfOpen} 
         onClose={() => setIsBookshelfOpen(false)} 
       />
+
+      <AuthModal 
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
+
+      {user && (
+        <ProfileModal 
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          user={user}
+        />
+      )}
 
       {/* Mobile Drawer Menu */}
       <AnimatePresence>
@@ -232,14 +356,6 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
                 </button>
               ))}
             </nav>
-
-            <button
-              onClick={() => handleLinkClick('survey')}
-              className="w-full py-3 bg-[#B56D4F] text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 shadow-xs cursor-pointer"
-            >
-              <span>Tham gia khảo sát</span>
-              <ArrowUpRight size={16} />
-            </button>
           </motion.div>
         )}
       </AnimatePresence>
