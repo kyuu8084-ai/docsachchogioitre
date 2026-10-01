@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageSquare, Send, Heart, Quote, X, Plus } from 'lucide-react';
+import { MessageSquare, Send, Heart, Quote, X, Plus, ArrowRight } from 'lucide-react';
 import VintageSeparator from './VintageSeparator';
 
 interface Confession {
@@ -19,6 +19,7 @@ export default function ConfessionCorner() {
   const [newText, setNewText] = useState('');
   const [newAuthor, setNewAuthor] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isArchiveOpen, setIsArchiveOpen] = useState(false);
   const [displayedTitle, setDisplayedTitle] = useState('');
 
   useEffect(() => {
@@ -163,8 +164,75 @@ export default function ConfessionCorner() {
           </motion.button>
         </div>
 
-        {/* Modal Overlay */}
+        {/* View Archive Button */}
+        {confessions.length > 6 && (
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => setIsArchiveOpen(true)}
+              className="px-6 py-2.5 bg-white border border-[#D6CDBF] text-[#3A3530] text-xs font-bold rounded-xl hover:bg-[#B56D4F] hover:text-white transition-all cursor-pointer shadow-sm flex items-center gap-2"
+            >
+              <span>Kho chứa toàn bộ tâm sự ({confessions.length})</span>
+              <ArrowRight size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Modal Overlay: New Post */}
         <AnimatePresence>
+          {isArchiveOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsArchiveOpen(false)}
+                className="absolute inset-0 bg-black/70 backdrop-blur-md"
+              />
+              
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                className="relative w-full max-w-4xl max-h-[85vh] vintage-card-bg bg-[#FAF7F0] rounded-[2rem] border-2 border-[#D6CDBF] shadow-2xl flex flex-col overflow-hidden"
+              >
+                <div className="p-6 sm:p-8 border-b border-[#D6CDBF] flex items-center justify-between sticky top-0 bg-[#FAF7F0] z-10">
+                  <div>
+                    <h3 className="font-playfair text-2xl font-bold text-[#3A3530]">Kho Lưu Trữ Tâm Sự</h3>
+                    <p className="text-xs text-[#6B635A] font-lora">Nơi lưu giữ vĩnh viễn những kỷ niệm của cộng đồng Đọc & Trẻ.</p>
+                  </div>
+                  <button
+                    onClick={() => setIsArchiveOpen(false)}
+                    className="p-2 rounded-full hover:bg-black/5 text-[#6B635A] cursor-pointer"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 sm:p-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {confessions.map((c) => (
+                    <div key={c.id} className="p-5 rounded-2xl bg-white border border-[#D6CDBF] shadow-xs hover:border-[#B56D4F] transition-colors relative group">
+                       <Quote size={20} className="absolute top-4 right-4 text-[#B56D4F]/5" />
+                       <p className="font-lora text-sm italic text-[#3A3530] mb-4">"{c.text}"</p>
+                       <div className="flex items-center justify-between text-[10px] text-[#6B635A] pt-3 border-t border-[#D6CDBF]/30">
+                          <span className="font-bold">{c.author} · {c.date}</span>
+                          <span className="flex items-center gap-1"><Heart size={10} className="fill-[#B56D4F] text-[#B56D4F]" /> {c.likes}</span>
+                       </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="p-6 bg-[#EBE5D9]/30 text-center border-t border-[#D6CDBF]">
+                   <button
+                    onClick={() => { setIsArchiveOpen(false); setIsModalOpen(true); }}
+                    className="px-6 py-2.5 bg-[#B56D4F] text-white text-xs font-bold rounded-xl shadow-md hover:bg-[#9A5A3F] transition-all cursor-pointer"
+                   >
+                     Gửi thêm tâm sự mới
+                   </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
           {isModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
               <motion.div

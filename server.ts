@@ -117,7 +117,15 @@ function readSurveyData(): SurveyStatsData {
   try {
     if (fs.existsSync(DATA_FILE)) {
       const content = fs.readFileSync(DATA_FILE, 'utf-8');
-      return JSON.parse(content);
+      if (content.trim()) {
+        const parsed = JSON.parse(content);
+        // Merge with initial stats to ensure all keys exist
+        return {
+          ...INITIAL_SURVEY_STATS,
+          ...parsed,
+          confessions: parsed.confessions || INITIAL_SURVEY_STATS.confessions
+        };
+      }
     }
   } catch (err) {
     console.error('Error reading survey_database.json:', err);
@@ -277,7 +285,7 @@ app.post('/api/confessions', (req, res) => {
     likes: 0
   };
 
-  data.confessions = [newConfession, ...(data.confessions || [])].slice(0, 50); // Keep last 50
+  data.confessions = [newConfession, ...(data.confessions || [])]; // Keep all for permanent storage
   writeSurveyData(data);
   res.json({ success: true, confession: newConfession });
 });
