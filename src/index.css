@@ -1,0 +1,150 @@
+@import "tailwindcss";
+@import "./styles/fonts.css";
+
+@font-face {
+  font-family: "Ogg Medium";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("https://dcym8fthxf5uu.cloudfront.net/fonts/247a073c-29f5-4a89-aa3a-741020f346fc/OggText-Medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist Mono:SemiBold";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("https://static.figma.com/font/GeistMono_wght__1") format("woff2");
+}
+
+.font-geist-mono-semibold {
+  font-family: "Geist Mono:SemiBold", monospace;
+}
+
+.font-instrument-serif {
+  font-family: 'Instrument Serif', Georgia, serif;
+}
+
+.font-inter {
+  font-family: 'Inter', sans-serif;
+}
+
+@layer base {
+  :root {
+    --font-playfair: 'Playfair Display', Georgia, serif;
+    --font-lora: 'Lora', Georgia, serif;
+    --font-garamond: 'EB Garamond', 'Garamond', 'Times New Roman', serif;
+    --font-geist: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-geist-mono: 'Geist Mono:SemiBold', monospace;
+  }
+
+
+  body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: var(--font-lora);
+    background-color: #010101;
+    color: #3A3530;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+.font-playfair {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.font-lora {
+  font-family: 'Lora', Georgia, serif;
+}
+
+.font-garamond {
+  font-family: 'EB Garamond', 'Garamond', 'Times New Roman', serif;
+}
+
+.font-geist {
+  font-family: 'Geist', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Vintage Paper Texture & Patterns */
+.vintage-paper-bg {
+  background-color: #F5F1E8;
+  background-image: radial-gradient(#d6cdbf 0.75px, transparent 0.75px), radial-gradient(#ebe5d9 0.75px, #F5F1E8 0.75px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+.vintage-paper-alt {
+  background-color: #EBE5D9;
+  background-image: radial-gradient(#d6cdbf 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+}
+
+.vintage-card-bg {
+  background-color: #FAF7F0;
+  border: 1px solid #D6CDBF;
+}
+
+/* Liquid Glass from user requirement */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.06);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: none;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 20%,
+    rgba(255,255,255,0) 40%, rgba(255,255,255,0) 60%,
+    rgba(255,255,255,0.15) 80%, rgba(255,255,255,0.45) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.liquid-glass:hover {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.25), 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.liquid-glass:active {
+  transform: scale(0.98);
+}
+
+/* Mobile Menu Glass */
+.mobile-menu-glass {
+  background: rgba(10, 10, 10, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #EBE5D9;
+}
+::-webkit-scrollbar-thumb {
+  background: #B56D4F;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9A5A3F;
+}

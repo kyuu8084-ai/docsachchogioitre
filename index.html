@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Ensure window.fetch has both getter and setter so injected scripts/polyfills don't throw
+      (function() {
+        try {
+          var originalFetch = window.fetch;
+          var currentFetch = originalFetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() {
+              return currentFetch;
+            },
+            set: function(fn) {
+              currentFetch = fn;
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          // ignore if already configurable
+        }
+      })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đọc & Trẻ – Giới trẻ Việt đang đọc gì?</title>
+    <meta name="description" content="Khám phá thói quen đọc sách và các thể loại sách được giới trẻ Việt quan tâm qua số liệu thực tế, phân tích chuyên sâu và khảo sát tương tác." />
+    <meta property="og:title" content="Đọc & Trẻ – Giới trẻ Việt đang đọc gì?" />
+    <meta property="og:description" content="Khám phá thói quen đọc sách và các thể loại sách được giới trẻ Việt quan tâm qua số liệu thực tế, phân tích chuyên sâu và khảo sát tương tác." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Google Fonts: Playfair Display, Lora, EB Garamond, Geist, Inter, Instrument Serif -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Geist:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,600&display=swap" rel="stylesheet">
+  </head>
+  <body class="bg-[#010101] text-[#3A3530] antialiased selection:bg-[#B56D4F] selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
