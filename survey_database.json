@@ -1,0 +1,65 @@
+{
+  "totalParticipants": 0,
+  "ageGroup": {
+    "under-18": 0,
+    "18-22": 0,
+    "23-30": 0,
+    "above-30": 0
+  },
+  "booksPerYear": {
+    "under-2": 0,
+    "2-5": 0,
+    "6-12": 0,
+    "above-12": 0
+  },
+  "readingFormats": {
+    "Sách giấy truyền thống": 0,
+    "Máy đọc sách chuyên dụng (Kindle, Kobo)": 0,
+    "Điện thoại / Máy tính bảng": 0,
+    "Sách nói (Audiobook qua Voiz FM, Fonos...)": 0,
+    "Tóm tắt sách qua video / podcast": 0
+  },
+  "favoriteGenres": {
+    "Self-help / Phát triển bản thân": 0,
+    "Chữa lành / Tâm lý": 0,
+    "Tiểu thuyết (ngôn tình, trinh thám, fantasy…)": 0,
+    "Truyện tranh / Manga / Light novel": 0,
+    "Kinh tế / Khởi nghiệp / Tài chính": 0,
+    "Lịch sử / Hồi ký / Tự truyện": 0
+  },
+  "readingMotivations": {
+    "Chữa lành, tìm sự cân bằng cảm xúc nội tâm": 0,
+    "Học kỹ năng mới, nâng cao kiến thức nghề nghiệp": 0,
+    "Giải trí, thư giãn đầu óc sau giờ căng thẳng": 0,
+    "Theo trend từ TikTok, Instagram, bạn bè giới thiệu": 0
+  },
+  "readingBarriers": {
+    "Không có thời gian do lịch học tập, công việc dày đặc": 0,
+    "Nghiện mạng xã hội, game, video ngắn lướt vô thức": 0,
+    "Không biết chọn cuốn sách nào phù hợp với bản thân": 0,
+    "Cảm thấy “khó vào”, dễ buồn ngủ sau vài trang đầu": 0
+  },
+  "confessions": [
+    {
+      "id": "1790841121679",
+      "text": "Nhớ",
+      "author": "Mọt Sách",
+      "date": "2026-10-01",
+      "likes": 0
+    },
+    {
+      "id": "1",
+      "text": "Đọc sách không phải để trở thành giáo sư, mà để thấy mình bớt cô độc giữa thế giới này.",
+      "author": "Bạn nhỏ ẩn danh",
+      "date": "2026-10-01",
+      "likes": 12
+    },
+    {
+      "id": "2",
+      "text": "Mỗi lần ngửi mùi sách mới, mình lại thấy một thế giới mới đang mở ra. Đó là cảm giác gây nghiện nhất.",
+      "author": "Mọt sách Hà Nội",
+      "date": "2026-10-01",
+      "likes": 24
+    }
+  ]
+}
