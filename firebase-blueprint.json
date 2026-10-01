@@ -59,6 +59,25 @@
         "avatarBase64": { "type": "string", "description": "Base64 encoded avatar image." },
         "updatedAt": { "type": "string", "format": "date-time" }
       }
+    },
+    "surveyAnswer": {
+      "title": "Survey Answer",
+      "description": "Individual survey response from a user.",
+      "type": "object",
+      "properties": {
+        "ageGroup": { "type": "string" },
+        "booksPerYear": { "type": "string" },
+        "readingFormats": { "type": "array" },
+        "favoriteGenres": { "type": "array" },
+        "readingMotivations": { "type": "array" },
+        "readingBarriers": { "type": "array" },
+        "buyingHabits": { "type": "array" },
+        "readingEnvironments": { "type": "array" },
+        "wantsNewsletter": { "type": "boolean" },
+        "email": { "type": "string" },
+        "submittedAt": { "type": "string" }
+      },
+      "required": ["submittedAt"]
     }
   },
   "firestore": {
@@ -73,6 +92,10 @@
     "users": {
       "schema": "userProfile",
       "description": "User profile documents keyed by UID."
+    },
+    "user_responses": {
+      "schema": "surveyAnswer",
+      "description": "User specific survey response keyed by user UID."
     }
   }
 }

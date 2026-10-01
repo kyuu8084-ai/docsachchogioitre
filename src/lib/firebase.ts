@@ -7,9 +7,13 @@ import firebaseConfig from '../../firebase-applet-config.json';
 const app = initializeApp(firebaseConfig);
 
 // Use initializeFirestore to enable long polling, which is more reliable in some proxy environments
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-});
+export const db = initializeFirestore(
+  app,
+  {
+    experimentalForceLongPolling: true,
+  },
+  firebaseConfig.firestoreDatabaseId
+);
 
 export const auth = getAuth();
 

@@ -6,6 +6,7 @@ import VintageSeparator from '../components/VintageSeparator';
 import DailyQuote from '../components/DailyQuote';
 import ConfessionCorner from '../components/ConfessionCorner';
 import MoodBookSuggestions from '../components/MoodBookSuggestions';
+import ReadingTrendsChartSection from '../components/ReadingTrendsChartSection';
 import { PageId } from '../types';
 
 interface HomePageProps {
@@ -305,8 +306,11 @@ export default function HomePage({ onNavigate }: HomePageProps) {
       {/* Row 2.2.9: Mood-based Book Suggestions Section (AI Powered) */}
       <MoodBookSuggestions />
 
-      {/* Row 2.3: Số liệu nổi bật (Infographic Teaser) */}
-      <section className="w-full vintage-paper-bg py-16 sm:py-24 text-[#3A3530]">
+      {/* Row 2.3: Live Real-time Survey Analysis Charts with Recharts from Firestore */}
+      <ReadingTrendsChartSection onNavigate={onNavigate} />
+
+      {/* Row 2.4: Số liệu nổi bật (Infographic Teaser) */}
+      <section className="w-full vintage-paper-alt py-16 sm:py-24 border-t border-[#D6CDBF] text-[#3A3530]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <span className="text-xs uppercase tracking-[0.2em] text-[#6B7A6E] font-semibold block mb-2 font-lora">

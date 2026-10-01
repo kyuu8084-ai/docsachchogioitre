@@ -34,6 +34,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import VintageSeparator from '../components/VintageSeparator';
 import ReadingJournal from '../components/ReadingJournal';
+import ReadingTrendsChartSection from '../components/ReadingTrendsChartSection';
 import { PageId } from '../types';
 
 interface ReadingHabitsPageProps {
@@ -974,6 +975,9 @@ export default function ReadingHabitsPage({ onNavigate }: ReadingHabitsPageProps
             </div>
           </div>
         </section>
+
+        {/* REALTIME FIRESTORE SURVEY CHARTS WITH RECHARTS */}
+        <ReadingTrendsChartSection onNavigate={onNavigate} />
 
         {/* BOTTOM SECTION: The 2-minute rule & Environment */}
         <section className="py-16 sm:py-24 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -1,10 +1,12 @@
 {
-  "projectId": "sachhay-ece64",
-  "appId": "1:453692902380:web:46caa75b5b8968677e4ec9",
-  "apiKey": "AIzaSyAZuiSTl2HqbSEJiCTvtANWIk7omSHKXiM",
-  "authDomain": "sachhay-ece64.firebaseapp.com",
-  "storageBucket": "sachhay-ece64.firebasestorage.app",
-  "messagingSenderId": "453692902380",
-  "measurementId": "G-N4FF125EYD",
-  "firestoreDatabaseId": "(default)"
+  "projectId": "steel-glazing-jj4jh",
+  "appId": "1:302493649025:web:8535c813148b00a082a580",
+  "apiKey": "AIzaSyCz-1XJrdKLt8pfMR-DEf4U5a3fIgnR9-k",
+  "authDomain": "steel-glazing-jj4jh.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-remixremixremixr-35c7776c-9f57-415d-9842-b0411703f5a9",
+  "storageBucket": "steel-glazing-jj4jh.firebasestorage.app",
+  "messagingSenderId": "302493649025",
+  "measurementId": "",
+  "oAuthClientId": "302493649025-a67sop088audvihnrpthp2gn4i9nelam.apps.googleusercontent.com",
+  "recaptchaSiteKey": ""
 }
