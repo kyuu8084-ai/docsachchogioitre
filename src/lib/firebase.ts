@@ -11,7 +11,7 @@ export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 }, firebaseConfig.firestoreDatabaseId);
 
-export const auth = getAuth();
+export const auth = getAuth(app);
 
 // Removed automatic anonymous sign-in to prevent unauthorized guest login.
 // Users can choose to sign in as guest via the AuthModal.
