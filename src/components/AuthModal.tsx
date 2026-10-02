@@ -8,23 +8,22 @@ import {
   X, 
   Loader2, 
   AlertCircle,
-  Chrome,
-  CheckCircle2,
-  ExternalLink,
-  ChevronDown,
-  ChevronUp
+  Chrome
 } from 'lucide-react';
 import { 
   signInWithPopup, 
   GoogleAuthProvider, 
   signInAnonymously,
-  linkWithPopup,
+  signOut,
+  onAuthStateChanged,
+  User as FirebaseUser,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  linkWithPopup,
+  fetchSignInMethodsForEmail,
   sendEmailVerification
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { setStoredAuthUser, AppAuthUser } from '../lib/appAuth';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -54,53 +53,33 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setError(null);
     try {
       const provider = new GoogleAuthProvider();
-      try {
-        if (auth.currentUser?.isAnonymous) {
-          try {
-            await linkWithPopup(auth.currentUser, provider);
-          } catch (linkErr: any) {
-            if (linkErr.code === 'auth/credential-already-in-use') {
-              await signInWithPopup(auth, provider);
-            } else {
-              throw linkErr;
-            }
+      
+      if (auth.currentUser?.isAnonymous) {
+        try {
+          await linkWithPopup(auth.currentUser, provider);
+        } catch (linkErr: any) {
+          if (linkErr.code === 'auth/credential-already-in-use') {
+            await signInWithPopup(auth, provider);
+          } else {
+            throw linkErr;
           }
-        } else {
-          await signInWithPopup(auth, provider);
         }
-        
-        if (auth.currentUser) {
-          setStoredAuthUser({
-            uid: auth.currentUser.uid,
-            email: auth.currentUser.email,
-            displayName: auth.currentUser.displayName,
-            photoURL: auth.currentUser.photoURL,
-            isAnonymous: false,
-            emailVerified: auth.currentUser.emailVerified,
-          });
-        }
-        onClose();
-      } catch (popupErr: any) {
-        if (popupErr.code === 'auth/popup-closed-by-user') {
-          setError('Cửa sổ đăng nhập đã bị đóng.');
-          return;
-        }
-        // Graceful authentication fallback in restricted preview / sandbox environment
-        console.warn("Google authentication fallback:", popupErr.code);
-        const authedUser: AppAuthUser = {
-          uid: 'google_user_' + (auth.currentUser?.uid || 'gg_' + Math.random().toString(36).substring(2, 9)),
-          email: 'trantran01925@gmail.com',
-          displayName: 'Độc giả Google',
-          photoURL: 'https://lh3.googleusercontent.com/a/default-user',
-          isAnonymous: false,
-          emailVerified: true,
-        };
-        setStoredAuthUser(authedUser);
-        onClose();
+      } else {
+        await signInWithPopup(auth, provider);
       }
+      
+      onClose();
     } catch (err: any) {
       console.error("Google Sign-in failed:", err);
-      setError(`Đăng nhập thất bại: ${err.message || 'Lỗi không xác định'}`);
+      if (err.code === 'auth/configuration-not-found') {
+        setError('Google Login chưa được bật trong Firebase Console.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('Tên miền này chưa được cấp phép trong Firebase Console. Vui lòng kiểm tra cài đặt Authorized Domains.');
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        setError('Cửa sổ đăng nhập đã bị đóng.');
+      } else {
+        setError(`Đăng nhập thất bại: ${err.message || 'Lỗi không xác định'}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -110,28 +89,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setIsLoading(true);
     setError(null);
     try {
-      const cred = await signInAnonymously(auth);
-      setStoredAuthUser({
-        uid: cred.user.uid,
-        email: null,
-        displayName: 'Khách ẩn danh',
-        photoURL: null,
-        isAnonymous: true,
-        emailVerified: false,
-      });
+      await signInAnonymously(auth);
       onClose();
     } catch (err: any) {
-      console.warn("Firebase Anonymous Sign-in notice:", err.code);
-      const guestUser: AppAuthUser = {
-        uid: 'guest_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
-        email: null,
-        displayName: 'Khách ẩn danh',
-        photoURL: null,
-        isAnonymous: true,
-        emailVerified: false,
-      };
-      setStoredAuthUser(guestUser);
-      onClose();
+      console.error("Guest Sign-in failed:", err);
+      setError('Đăng nhập khách thất bại.');
     } finally {
       setIsLoading(false);
     }
@@ -144,62 +106,28 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     setIsLoading(true);
     setError(null);
     try {
-      try {
-        if (mode === 'email-login') {
-          const userCredential = await signInWithEmailAndPassword(auth, email, password);
-          setStoredAuthUser({
-            uid: userCredential.user.uid,
-            email: userCredential.user.email,
-            displayName: userCredential.user.displayName || email.split('@')[0],
-            photoURL: userCredential.user.photoURL,
-            isAnonymous: false,
-            emailVerified: userCredential.user.emailVerified,
-          });
-          onClose();
-        } else {
-          const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-          setStoredAuthUser({
-            uid: userCredential.user.uid,
-            email: userCredential.user.email,
-            displayName: email.split('@')[0],
-            photoURL: null,
-            isAnonymous: false,
-            emailVerified: true,
-          });
-          try {
-            await sendEmailVerification(userCredential.user);
-          } catch (vErr) {}
-          onClose();
-        }
-      } catch (authErr: any) {
-        console.warn("Email Auth notice:", authErr.code);
-        if (
-          authErr.code === 'auth/operation-not-allowed' || 
-          authErr.code === 'auth/admin-restricted-operation' ||
-          authErr.code === 'auth/user-not-found' ||
-          authErr.code === 'auth/invalid-credential' ||
-          authErr.code === 'auth/network-request-failed'
-        ) {
-          // Graceful authentication fallback in restricted preview / sandbox environment
-          const authedUser: AppAuthUser = {
-            uid: 'usr_' + btoa(email.trim().toLowerCase()).replace(/[^a-zA-Z0-9]/g, '').slice(0, 20),
-            email: email.trim(),
-            displayName: email.split('@')[0],
-            photoURL: null,
-            isAnonymous: false,
-            emailVerified: true,
-          };
-          setStoredAuthUser(authedUser);
-          onClose();
+      if (mode === 'email-login') {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        if (!userCredential.user.emailVerified) {
+          setError('Email của bạn chưa được xác thực. Vui lòng kiểm tra hộp thư.');
+          // Optionally resend verification
+          // await sendEmailVerification(userCredential.user);
           return;
         }
-
-        if (authErr.code === 'auth/wrong-password') setError('Mật khẩu không chính xác.');
-        else if (authErr.code === 'auth/email-already-in-use') setError('Email đã được sử dụng.');
-        else if (authErr.code === 'auth/weak-password') setError('Mật khẩu quá yếu (tối thiểu 6 ký tự).');
-        else if (authErr.code === 'auth/invalid-email') setError('Email không hợp lệ.');
-        else setError('Đăng nhập thất bại. Vui lòng kiểm tra lại.');
+        onClose();
+      } else {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await sendEmailVerification(userCredential.user);
+        setMode('verification-sent');
       }
+    } catch (err: any) {
+      console.error("Email Auth failed:", err);
+      if (err.code === 'auth/user-not-found') setError('Không tìm thấy tài khoản.');
+      else if (err.code === 'auth/wrong-password') setError('Mật khẩu không chính xác.');
+      else if (err.code === 'auth/email-already-in-use') setError('Email đã được sử dụng.');
+      else if (err.code === 'auth/weak-password') setError('Mật khẩu quá yếu (tối thiểu 6 ký tự).');
+      else if (err.code === 'auth/invalid-email') setError('Email không hợp lệ.');
+      else setError('Xác thực thất bại. Vui lòng kiểm tra lại.');
     } finally {
       setIsLoading(false);
     }
@@ -223,40 +151,39 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         className="relative w-full max-w-md bg-[#FAF7F0] rounded-3xl shadow-2xl overflow-hidden border border-[#D6CDBF]"
       >
-        <div className="h-28 bg-[#B56D4F] relative flex items-center justify-center">
+        <div className="h-32 bg-[#B56D4F] relative flex items-center justify-center">
           <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-          <div className="w-14 h-14 bg-white rounded-2xl shadow-lg flex items-center justify-center text-[#B56D4F]">
-            <User size={28} />
+          <div className="w-16 h-16 bg-white rounded-2xl shadow-lg flex items-center justify-center text-[#B56D4F]">
+            <User size={32} />
           </div>
           <button 
             onClick={onClose}
             className="absolute top-4 right-4 p-2 bg-black/10 hover:bg-black/20 text-white rounded-full transition-colors cursor-pointer"
           >
-            <X size={18} />
+            <X size={20} />
           </button>
         </div>
 
-        <div className="p-6 sm:p-8">
-          <div className="text-center mb-6">
+        <div className="p-8">
+          <div className="text-center mb-8">
             <h2 className="font-playfair text-2xl font-bold text-[#3A3530]">
               {mode === 'verification-sent' ? 'Kiểm tra Email' : mode === 'selection' ? 'Chào mừng bạn!' : mode === 'email-login' ? 'Đăng nhập Email' : 'Tạo tài khoản mới'}
             </h2>
-            <p className="font-lora text-[#6B635A] text-xs sm:text-sm mt-1">
-              Lưu lại thói quen đọc sách và theo dõi khảo sát của riêng bạn.
+            <p className="font-lora text-[#6B635A] text-sm mt-2">
+              {mode === 'verification-sent' 
+                ? `Chúng mình đã gửi một liên kết xác thực đến ${email}. Vui lòng xác thực trước khi đăng nhập.`
+                : 'Lưu lại thói quen đọc sách và theo dõi khảo sát của riêng bạn.'}
             </p>
           </div>
 
-          {/* Error Message */}
           {error && (
             <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="mb-5 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-xs font-lora"
+              className="mb-6 p-3 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3 text-red-600 text-sm"
             >
-              <div className="flex items-start gap-2.5">
-                <AlertCircle size={18} className="shrink-0 mt-0.5 text-red-600" />
-                <p className="font-medium leading-relaxed">{error}</p>
-              </div>
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              <p>{error}</p>
             </motion.div>
           )}
 
@@ -276,8 +203,8 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 disabled={isLoading}
                 className="w-full flex items-center justify-center gap-3 bg-white border border-[#D6CDBF] text-[#3A3530] py-3.5 rounded-xl font-medium hover:bg-[#F5F1E8] transition-all active:scale-[0.98] cursor-pointer"
               >
-                {isLoading ? <Loader2 className="animate-spin" size={18} /> : <Chrome size={18} className="text-blue-500" />}
-                <span>Tiếp tục với Google</span>
+                {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Chrome size={20} className="text-blue-500" />}
+                Tiếp tục với Google
               </button>
 
               <button
@@ -285,45 +212,45 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 disabled={isLoading}
                 className="w-full flex items-center justify-center gap-3 bg-[#3A3530] text-white py-3.5 rounded-xl font-medium hover:bg-[#2A2520] transition-all active:scale-[0.98] cursor-pointer"
               >
-                <Mail size={18} />
-                <span>Sử dụng Email</span>
+                <Mail size={20} />
+                Sử dụng Email
               </button>
 
-              <div className="flex items-center gap-4 my-3">
+              <div className="flex items-center gap-4 my-6">
                 <div className="flex-1 h-px bg-[#D6CDBF]"></div>
-                <span className="text-[10px] uppercase tracking-widest text-[#6B635A] font-bold font-sans">Hoặc</span>
+                <span className="text-[10px] uppercase tracking-widest text-[#6B635A] font-bold">Hoặc</span>
                 <div className="flex-1 h-px bg-[#D6CDBF]"></div>
               </div>
 
               <button
                 onClick={handleAnonymousSignIn}
                 disabled={isLoading}
-                className="w-full py-2 text-[#8C8275] hover:text-[#B56D4F] font-lora text-xs hover:underline transition-all cursor-pointer"
+                className="w-full py-3 text-[#B56D4F] font-semibold text-sm hover:underline transition-all cursor-pointer"
               >
-                Tiếp tục như Khách ẩn danh (Chỉ xem, không tham gia khảo sát)
+                Tiếp tục như Khách ẩn danh
               </button>
             </div>
           ) : (
             <form onSubmit={handleEmailAuth} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#6B635A] uppercase tracking-wider ml-1 font-sans">Email</label>
+                <label className="text-xs font-bold text-[#6B635A] uppercase tracking-wider ml-1">Email</label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-white border border-[#D6CDBF] rounded-xl focus:ring-2 focus:ring-[#B56D4F]/30 focus:border-[#B56D4F] outline-none transition-all text-sm font-lora"
+                  className="w-full px-4 py-3 bg-white border border-[#D6CDBF] rounded-xl focus:ring-2 focus:ring-[#B56D4F]/30 focus:border-[#B56D4F] outline-none transition-all"
                   placeholder="email@vidu.com"
                   required
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-[#6B635A] uppercase tracking-wider ml-1 font-sans">Mật khẩu</label>
+                <label className="text-xs font-bold text-[#6B635A] uppercase tracking-wider ml-1">Mật khẩu</label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-white border border-[#D6CDBF] rounded-xl focus:ring-2 focus:ring-[#B56D4F]/30 focus:border-[#B56D4F] outline-none transition-all text-sm font-lora"
+                  className="w-full px-4 py-3 bg-white border border-[#D6CDBF] rounded-xl focus:ring-2 focus:ring-[#B56D4F]/30 focus:border-[#B56D4F] outline-none transition-all"
                   placeholder="••••••••"
                   required
                 />
@@ -334,14 +261,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 disabled={isLoading}
                 className="w-full flex items-center justify-center gap-3 bg-[#B56D4F] text-white py-3.5 rounded-xl font-medium hover:bg-[#9A5A3F] transition-all active:scale-[0.98] shadow-md cursor-pointer mt-2"
               >
-                {isLoading ? <Loader2 className="animate-spin" size={18} /> : (mode === 'email-login' ? 'Đăng nhập' : 'Tạo tài khoản')}
+                {isLoading ? <Loader2 className="animate-spin" size={20} /> : (mode === 'email-login' ? 'Đăng nhập' : 'Tạo tài khoản')}
               </button>
 
-              <div className="text-center mt-3">
+              <div className="text-center mt-4">
                 <button
                   type="button"
                   onClick={() => setMode(mode === 'email-login' ? 'email-signup' : 'email-login')}
-                  className="text-xs text-[#6B635A] hover:text-[#B56D4F] transition-colors cursor-pointer"
+                  className="text-sm text-[#6B635A] hover:text-[#B56D4F] transition-colors cursor-pointer"
                 >
                   {mode === 'email-login' ? 'Chưa có tài khoản? Đăng ký ngay' : 'Đã có tài khoản? Đăng nhập'}
                 </button>
@@ -350,7 +277,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               <button
                 type="button"
                 onClick={() => setMode('selection')}
-                className="w-full text-xs text-[#6B635A] mt-2 hover:underline cursor-pointer"
+                className="w-full text-xs text-[#6B635A] mt-4 hover:underline cursor-pointer"
               >
                 Quay lại phương thức khác
               </button>
@@ -361,4 +288,3 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
     </div>
   );
 }
-

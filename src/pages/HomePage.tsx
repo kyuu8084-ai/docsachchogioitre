@@ -1,12 +1,10 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, BookOpen, Clock, Smartphone, Sparkles, TrendingUp, Volume2, VolumeX, Pause, Play, Compass, CheckCircle2, Users } from 'lucide-react';
+import { ArrowRight, BookOpen, Clock, Smartphone, Sparkles, TrendingUp, Volume2, VolumeX, Pause, Play, Compass, CheckCircle2, Users, SearchCode as MagnifyingGlass } from 'lucide-react';
 import StaggeredFade from '../components/StaggeredFade';
 import VintageSeparator from '../components/VintageSeparator';
 import DailyQuote from '../components/DailyQuote';
 import ConfessionCorner from '../components/ConfessionCorner';
-import MoodBookSuggestions from '../components/MoodBookSuggestions';
-import ReadingTrendsChartSection from '../components/ReadingTrendsChartSection';
 import { PageId } from '../types';
 
 interface HomePageProps {
@@ -293,6 +291,31 @@ export default function HomePage({ onNavigate }: HomePageProps) {
                 <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
+
+            {/* Chuyên đề GIẢI TRÍ: Game */}
+            <div
+              onClick={() => onNavigate('detective-game')}
+              className="vintage-card-bg p-5 sm:p-6 rounded-2xl bg-[#1F3B34] border-[#D9A441]/30 hover:border-[#D9A441] hover:shadow-[0_10px_30px_rgba(217,164,65,0.2)] transition-all cursor-pointer group flex flex-col justify-between border shadow-lg"
+            >
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-[#D9A441]/20 text-[#D9A441] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-[0_0_15px_rgba(217,164,65,0.3)]">
+                  <MagnifyingGlass size={20} />
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#D9A441] block mb-1">
+                  Giải trí bí ẩn
+                </span>
+                <h3 className="font-playfair text-base sm:text-lg font-bold text-[#FBF6E9] mb-2 group-hover:text-[#D9A441] transition-colors leading-snug">
+                  Thám Tử Thư Viện
+                </h3>
+                <p className="font-lora text-xs text-[#FBF6E9]/60 leading-relaxed">
+                  Thử thách suy luận: Giải mã cuốn sách bí ẩn từ những manh mối cổ xưa mỗi ngày.
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-1.5 text-xs font-semibold text-[#D9A441] group-hover:underline">
+                <span>Vào phá án</span>
+                <ArrowRight size={13} className="group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -303,14 +326,8 @@ export default function HomePage({ onNavigate }: HomePageProps) {
       {/* Row 2.2.8: Confession Corner Section */}
       <ConfessionCorner />
 
-      {/* Row 2.2.9: Mood-based Book Suggestions Section (AI Powered) */}
-      <MoodBookSuggestions />
-
-      {/* Row 2.3: Live Real-time Survey Analysis Charts with Recharts from Firestore */}
-      <ReadingTrendsChartSection onNavigate={onNavigate} />
-
-      {/* Row 2.4: Số liệu nổi bật (Infographic Teaser) */}
-      <section className="w-full vintage-paper-alt py-16 sm:py-24 border-t border-[#D6CDBF] text-[#3A3530]">
+      {/* Row 2.3: Số liệu nổi bật (Infographic Teaser) */}
+      <section className="w-full vintage-paper-bg py-16 sm:py-24 text-[#3A3530]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
             <span className="text-xs uppercase tracking-[0.2em] text-[#6B7A6E] font-semibold block mb-2 font-lora">

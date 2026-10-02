@@ -83,7 +83,7 @@ const THEME_TOPICS: ThemeTopicItem[] = [
     tagline: 'Lắng nghe hành vi thực tế & đồng bộ trực tiếp đa thiết bị',
     description: 'Nền tảng tương tác 2 phút cho phép bạn đọc chia sẻ thói quen cá nhân. Dữ liệu được lưu trữ máy chủ & đồng bộ theo thời gian thực trên mọi thiết bị với biểu đồ tròn và biểu đồ thanh phần trăm sinh động.',
     keyMetric: 'Đồng bộ máy chủ & biểu đồ tròn trực quan',
-    highlights: ['Khảo sát 6 câu hỏi trực quan', 'Biểu đồ tròn SVG & biểu đồ thanh', 'Lưu trữ máy chủ đồng bộ đa thiết bị'],
+    highlights: ['Khảo sát 9 câu hỏi trực quan', 'Biểu đồ tròn SVG & biểu đồ thanh', 'Lưu trữ máy chủ đồng bộ đa thiết bị'],
     pageId: 'survey',
     icon: CheckCircle2,
   },

@@ -1,4 +1,4 @@
-export type PageId = 'home' | 'reading-habits' | 'genres' | 'library' | 'survey' | 'about' | '404';
+export type PageId = 'home' | 'reading-habits' | 'genres' | 'library' | 'survey' | 'about' | 'detective-game' | '404';
 
 export enum Category {
   COMEDY = 'COMEDY',

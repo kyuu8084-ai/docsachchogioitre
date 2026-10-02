@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import VintageSeparator from '../components/VintageSeparator';
 import { GenreItem, PageId } from '../types';
+import GenreSurveyChart from '../components/GenreSurveyChart';
 
 interface GenresPageProps {
   onNavigate: (page: PageId) => void;
@@ -843,52 +844,14 @@ export default function GenresPage({ onNavigate }: GenresPageProps) {
             </motion.div>
           )}
 
-          {/* NEW: Genre Trends Analysis Section */}
+          {/* DYNAMIC: Real-time Genre Survey Data Visualization */}
           <div className="mt-16 bg-[#FAF7F0] border-t border-[#D6CDBF] pt-16">
             <div className="text-center mb-10">
               <span className="text-[10px] font-bold uppercase tracking-widest text-[#B56D4F] bg-[#B56D4F]/10 px-3 py-1 rounded-full mb-3 inline-block">Thống kê xu hướng</span>
-              <h3 className="font-playfair text-2xl sm:text-3xl font-bold text-[#3A3530]">Chuyển dịch trong thói quen đọc</h3>
+              <h3 className="font-playfair text-2xl sm:text-3xl font-bold text-[#3A3530]">Sức hút của các dòng sách hiện nay</h3>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-              <div className="space-y-6">
-                <p className="font-lora text-sm text-[#6B635A] leading-relaxed">
-                  Dữ liệu từ 12 tháng qua cho thấy sự gia tăng đột biến ở dòng sách <strong>Chữa lành</strong> và <strong>Tâm lý học</strong>. Người trẻ đang có xu hướng tìm về bên trong để cân bằng sức khỏe tinh thần sau đại dịch và áp lực số.
-                </p>
-                
-                <div className="space-y-4">
-                  {[
-                    { label: 'Chữa lành & Tâm lý', growth: '+28%', color: '#C05C6E' },
-                    { label: 'Kinh tế & Đầu tư', growth: '+15%', color: '#2D7F60' },
-                    { label: 'Tiểu thuyết Fiction', growth: '-4%', color: '#8C4328' },
-                  ].map((trend, i) => (
-                    <div key={i} className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="font-bold text-[#3A3530]">{trend.label}</span>
-                          <span style={{ color: trend.color }} className="font-mono font-bold">{trend.growth}</span>
-                        </div>
-                        <div className="w-full bg-[#EBE5D9] h-1.5 rounded-full overflow-hidden">
-                          <motion.div 
-                            initial={{ width: 0 }}
-                            whileInView={{ width: trend.growth.includes('+') ? trend.growth.replace('+', '') : '10%' }}
-                            viewport={{ once: true }}
-                            className="h-full" 
-                            style={{ backgroundColor: trend.color }} 
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="bg-[#EBE5D9]/50 p-8 rounded-3xl border border-[#D6CDBF] text-center">
-                <TrendingUp size={48} className="mx-auto text-[#B56D4F] mb-4 opacity-50" />
-                <h4 className="font-playfair font-bold text-lg text-[#3A3530] mb-2">Dự đoán 2027</h4>
-                <p className="font-lora text-xs text-[#6B635A]">Dòng sách <strong>Lịch sử & Khoa học</strong> được kỳ vọng sẽ tăng trưởng mạnh khi giới trẻ Việt quan tâm hơn đến bản sắc và công nghệ AI.</p>
-              </div>
-            </div>
+            <GenreSurveyChart />
           </div>
 
           {/* Bottom invitation to library & survey */}

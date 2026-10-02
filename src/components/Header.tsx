@@ -6,8 +6,7 @@ import MyBookshelf, { BOOKSHELF_SYNC_EVENT } from './MyBookshelf';
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 import { auth, db } from '../lib/firebase';
-import { User as FirebaseUser } from 'firebase/auth';
-import { subscribeAuth, appSignOut, AppAuthUser } from '../lib/appAuth';
+import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 
 interface HeaderProps {
@@ -41,8 +40,8 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
   useEffect(() => {
     let unsubscribeSnapshot: (() => void) | null = null;
 
-    const unsubscribeAuth = subscribeAuth((currentUser) => {
-      setUser(currentUser as any);
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
       
       if (unsubscribeSnapshot) {
         unsubscribeSnapshot();
@@ -97,6 +96,7 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
     { id: 'reading-habits', label: 'Thói quen đọc' },
     { id: 'genres', label: 'Thể loại sách hot' },
     { id: 'library', label: 'Thư viện sách' },
+    { id: 'detective-game', label: 'Thám Tử Game' },
     { id: 'survey', label: 'Khảo sát' },
     { id: 'about', label: 'Về chúng mình' },
   ];
@@ -236,7 +236,7 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
 
                         <button
                           onClick={() => {
-                            appSignOut();
+                            signOut(auth);
                             setIsUserMenuOpen(false);
                           }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer"

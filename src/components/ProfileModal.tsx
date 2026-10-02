@@ -60,14 +60,44 @@ export default function ProfileModal({ isOpen, onClose, user }: ProfileModalProp
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) { // 2MB limit for Firestore Base64
-      setError("Ảnh quá lớn! Vui lòng chọn ảnh dưới 2MB để đảm bảo hiệu suất.");
+    if (file.size > 1 * 1024 * 1024) { 
+      setError("Ảnh quá lớn! Vui lòng chọn ảnh dưới 1MB để đảm bảo hệ thống lưu trữ được.");
       return;
     }
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      setAvatarBase64(reader.result as string);
+      const img = new Image();
+      img.src = reader.result as string;
+      img.onload = () => {
+        // Create canvas to resize image
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Target max 400px for avatar
+        const MAX_SIZE = 400;
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // Compress to JPEG with 0.7 quality
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        setAvatarBase64(compressedBase64);
+      };
     };
     reader.readAsDataURL(file);
   };

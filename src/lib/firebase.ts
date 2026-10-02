@@ -1,19 +1,15 @@
 import { initializeApp } from 'firebase/app';
-import { initializeFirestore, doc, getDoc } from 'firebase/firestore';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-// Use initializeFirestore to enable long polling, which is more reliable in some proxy environments
-export const db = initializeFirestore(
-  app,
-  {
-    experimentalForceLongPolling: true,
-  },
-  firebaseConfig.firestoreDatabaseId
-);
+// Use initializeFirestore to enable long polling and specify the correct database ID
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+}, firebaseConfig.firestoreDatabaseId);
 
 export const auth = getAuth();
 
@@ -40,16 +36,16 @@ isSupported().then(yes => {
 async function testConnection() {
   console.log("Checking Firestore connection for project:", firebaseConfig.projectId);
   try {
-    // We use a simple getDoc to verify if the database is reachable
-    await getDoc(doc(db, 'test', 'connection'));
+    // We use getDocFromServer to verify if the database is reachable online
+    await getDocFromServer(doc(db, 'test', 'connection'));
     console.log("✅ Firestore connection: READY");
   } catch (error: any) {
     // We don't throw here to avoid crashing the app, but we log the specific reason
-    if (error.code === 'failed-precondition' || error.message.includes('offline')) {
-      console.error("❌ Firestore connection: OFFLINE. This is usually because the Database has not been created in the Firebase Console yet.");
+    if (error.message && error.message.includes('the client is offline')) {
+      console.error("❌ Firestore connection: OFFLINE. Please check your Firebase configuration or network.");
     } else {
       console.error("❌ Firestore connection: ERROR", error);
-      if (error.code === 'unavailable') {
+      if (error.code === 'unavailable' || (error.message && error.message.includes('offline'))) {
         window.dispatchEvent(new CustomEvent('firebase-connection-failed'));
       }
     }

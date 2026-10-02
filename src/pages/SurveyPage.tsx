@@ -26,9 +26,8 @@ import {
   PartyPopper
 } from 'lucide-react';
 import { doc, onSnapshot, setDoc, runTransaction, getDoc, deleteDoc } from 'firebase/firestore';
-import { User as FirebaseUser } from 'firebase/auth';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { db, auth } from '../lib/firebase';
-import { subscribeAuth, getStoredAuthUser, AppAuthUser } from '../lib/appAuth';
 import { handleFirestoreError, OperationType } from '../lib/firestoreErrorHandler';
 import VintageSeparator from '../components/VintageSeparator';
 import SurveyAnalysisCharts from '../components/SurveyAnalysisCharts';
@@ -95,7 +94,7 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
     }
   };
 
-  // Form states initialized to null or empty arrays (no auto pre-selected defaults)
+  // Form states
   const [ageGroup, setAgeGroup] = useState<string | null>(null);
   const [booksPerYear, setBooksPerYear] = useState<string | null>(null);
   const [readingFormats, setReadingFormats] = useState<string[]>([]);
@@ -104,9 +103,8 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
   const [readingBarriers, setReadingBarriers] = useState<string[]>([]);
   const [buyingHabits, setBuyingHabits] = useState<string[]>([]);
   const [readingEnvironments, setReadingEnvironments] = useState<string[]>([]);
-  const [wantsNewsletter, setWantsNewsletter] = useState<boolean | null>(null);
+  const [wantsNewsletter, setWantsNewsletter] = useState<boolean>(false);
   const [email, setEmail] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showCelebrationModal, setShowCelebrationModal] = useState<boolean>(false);
   const [isFirebaseOffline, setIsFirebaseOffline] = useState<boolean>(false);
   const [isAuthDisabled, setIsAuthDisabled] = useState<boolean>(false);
@@ -129,22 +127,19 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
     };
   }, []);
 
-  // Check if current user is authenticated with a real account (must be logged in, not anonymous)
-  const isUserLoggedIn = Boolean(user && !user.isAnonymous);
-
-  // Sync with Cloud: Real User Auth + Firestore personal response
+  // Sync with Cloud: Anonymous User Auth + Firestore personal response
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
 
-    const unsubscribeAuth = subscribeAuth(async (currentUser) => {
-      setUser(currentUser as any);
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
       
       if (unsubscribeProfile) {
         unsubscribeProfile();
         unsubscribeProfile = null;
       }
 
-      if (currentUser && !currentUser.isAnonymous) {
+      if (currentUser) {
         setIsSyncingWithCloud(true);
         
         // Listen to personal profile (for avatar and name)
@@ -168,7 +163,8 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
             setSubmittedData(cloudData);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData));
           } else {
-            // User is logged in but hasn't submitted yet
+            // Important: If no cloud data exists for this user, clear local state
+            // to avoid showing data from a previous user on the same device.
             setSubmittedData(null);
             localStorage.removeItem(STORAGE_KEY);
           }
@@ -178,11 +174,9 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
           setIsSyncingWithCloud(false);
         }
       } else {
-        // Not logged in or anonymous: cannot have a valid survey submission
         setCustomAvatar(null);
         setCustomName(null);
-        setSubmittedData(null);
-        localStorage.removeItem(STORAGE_KEY);
+        setSubmittedData(null); // Clear state when user logs out
       }
     });
 
@@ -192,32 +186,37 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
     };
   }, []);
 
-  // Dynamic interaction check for each question
-  const hasInteractedAge = ageGroup !== null && ageGroup !== '';
-  const hasInteractedBooks = booksPerYear !== null && booksPerYear !== '';
-  const hasInteractedFormats = readingFormats.length > 0;
-  const hasInteractedGenres = favoriteGenres.length > 0;
-  const hasInteractedMotivations = readingMotivations.length > 0;
-  const hasInteractedBarriers = readingBarriers.length > 0;
-  const hasInteractedBuying = buyingHabits.length > 0;
-  const hasInteractedEnvironments = readingEnvironments.length > 0;
-  const hasInteractedNewsletter = wantsNewsletter !== null && (wantsNewsletter === false || email.trim().length > 0);
+  // Load from localStorage on mount (initial fast load before cloud sync)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved && !submittedData) {
+        const parsed = JSON.parse(saved);
+        // Only restore if it looks like a valid survey response
+        if (parsed && parsed.submittedAt) {
+          setSubmittedData(parsed);
+        }
+      }
+    } catch (err) {
+      console.error('Error reading localStorage', err);
+    }
+  }, []);
 
+  // Dynamic progress calculation based on completed questions (9 questions total)
   const completedQuestionsCount = [
-    hasInteractedAge,
-    hasInteractedBooks,
-    hasInteractedFormats,
-    hasInteractedGenres,
-    hasInteractedMotivations,
-    hasInteractedBarriers,
-    hasInteractedBuying,
-    hasInteractedEnvironments,
-    hasInteractedNewsletter,
+    Boolean(ageGroup),
+    Boolean(booksPerYear),
+    readingFormats.length > 0,
+    favoriteGenres.length > 0,
+    readingMotivations.length > 0,
+    readingBarriers.length > 0,
+    buyingHabits.length > 0,
+    readingEnvironments.length > 0,
+    !wantsNewsletter || Boolean(email.trim()),
   ].filter(Boolean).length;
 
   const totalQuestions = 9;
   const surveyProgressPct = Math.round((completedQuestionsCount / totalQuestions) * 100);
-  const isFormValid = completedQuestionsCount === totalQuestions;
 
   const handleFormatToggle = (format: string) => {
     if (readingFormats.includes(format)) {
@@ -274,17 +273,11 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid || isSubmitting) {
-      if (completedQuestionsCount < totalQuestions) {
-        setErrorMessage(`Vui lòng hoàn thành tất cả các câu hỏi (${completedQuestionsCount}/${totalQuestions} câu đã làm) trước khi gửi kết quả.`);
-      }
+    if (!ageGroup || !booksPerYear) {
+      setErrorMessage('Vui lòng hoàn thành tất cả các câu hỏi bắt buộc.');
       return;
     }
 
-    if (!ageGroup || !booksPerYear) {
-      setErrorMessage('Vui lòng chọn đầy đủ độ tuổi và số lượng sách đọc mỗi năm!');
-      return;
-    }
     if (readingFormats.length === 0) {
       setErrorMessage('Vui lòng chọn ít nhất 1 hình thức đọc sách!');
       return;
@@ -293,37 +286,14 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
       setErrorMessage('Vui lòng chọn ít nhất 1 thể loại sách yêu thích!');
       return;
     }
-    if (readingMotivations.length === 0) {
-      setErrorMessage('Vui lòng chọn ít nhất 1 động lực đọc sách!');
-      return;
-    }
-    if (readingBarriers.length === 0) {
-      setErrorMessage('Vui lòng chọn ít nhất 1 rào cản đọc sách!');
-      return;
-    }
-    if (buyingHabits.length === 0) {
-      setErrorMessage('Vui lòng chọn ít nhất 1 hình thức sở hữu sách!');
-      return;
-    }
-    if (readingEnvironments.length === 0) {
-      setErrorMessage('Vui lòng chọn ít nhất 1 không gian đọc sách lý tưởng!');
-      return;
-    }
-    if (wantsNewsletter === null) {
-      setErrorMessage('Vui lòng chọn xem bạn có muốn nhận thư gợi ý sách hay không!');
-      return;
-    }
     if (wantsNewsletter && !email.trim()) {
-      setErrorMessage('Vui lòng nhập địa chỉ email của bạn hoặc chọn "Không, cảm ơn".');
+      setErrorMessage('Vui lòng nhập địa chỉ email của bạn hoặc bỏ chọn nhận tin.');
       return;
     }
-
-    setIsSubmitting(true);
-    setErrorMessage('');
 
     const payload: SurveyAnswer = {
-      ageGroup,
-      booksPerYear,
+      ageGroup: ageGroup || '',
+      booksPerYear: booksPerYear || '',
       readingFormats,
       favoriteGenres,
       readingMotivations,
@@ -345,86 +315,19 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
     }
 
     try {
-      // 1. Validate that the user is logged in with a real account (not anonymous)
-      const currentFirebaseUser = auth.currentUser || user || getStoredAuthUser();
-      if (!currentFirebaseUser || currentFirebaseUser.isAnonymous) {
-        setIsAuthModalOpen(true);
-        setErrorMessage('Bạn phải đăng nhập tài khoản trước khi gửi khảo sát!');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // 2. Save personal response to Firestore
-      const userDocRef = doc(db, 'user_responses', currentFirebaseUser.uid);
-      await setDoc(userDocRef, payload);
-      console.log("✅ Saved response to user_responses/" + currentFirebaseUser.uid);
-
-      // 3. Sync with Firestore Global Stats using Transaction
-      try {
-        const docRef = doc(db, 'stats', 'global');
-        await runTransaction(db, async (transaction) => {
-          const sfDoc = await transaction.get(docRef);
-          const current: SurveyStatsData = sfDoc.exists()
-            ? (sfDoc.data() as SurveyStatsData)
-            : INITIAL_SURVEY_STATS;
-
-          const updated: SurveyStatsData = {
-            ...current,
-            totalParticipants: (current.totalParticipants || 0) + 1,
-            ageGroup: {
-              ...(current.ageGroup || {}),
-              [ageGroup]: ((current.ageGroup && current.ageGroup[ageGroup as keyof typeof current.ageGroup]) || 0) + 1,
-            },
-            booksPerYear: {
-              ...(current.booksPerYear || {}),
-              [booksPerYear]: ((current.booksPerYear && current.booksPerYear[booksPerYear as keyof typeof current.booksPerYear]) || 0) + 1,
-            },
-            readingFormats: { ...(current.readingFormats || {}) },
-            favoriteGenres: { ...(current.favoriteGenres || {}) },
-            readingMotivations: { ...(current.readingMotivations || {}) },
-            readingBarriers: { ...(current.readingBarriers || {}) },
-            buyingHabits: { ...(current.buyingHabits || {}) },
-            readingEnvironments: { ...(current.readingEnvironments || {}) },
-          };
-
-          readingFormats.forEach((fmt) => {
-            updated.readingFormats[fmt] = (updated.readingFormats[fmt] || 0) + 1;
-          });
-
-          favoriteGenres.forEach((gnr) => {
-            updated.favoriteGenres[gnr] = (updated.favoriteGenres[gnr] || 0) + 1;
-          });
-
-          readingMotivations.forEach((mot) => {
-            updated.readingMotivations[mot] = (updated.readingMotivations[mot] || 0) + 1;
-          });
-
-          readingBarriers.forEach((barr) => {
-            updated.readingBarriers[barr] = (updated.readingBarriers[barr] || 0) + 1;
-          });
-
-          buyingHabits.forEach((hab) => {
-            updated.buyingHabits[hab] = (updated.buyingHabits[hab] || 0) + 1;
-          });
-
-          readingEnvironments.forEach((env) => {
-            updated.readingEnvironments[env] = (updated.readingEnvironments[env] || 0) + 1;
-          });
-
-          transaction.set(docRef, updated);
-          setSurveyStats(updated);
-        });
-        console.log("✅ Aggregated stats updated on Firebase stats/global");
-      } catch (statsErr) {
-        console.error("Firestore stats transaction error:", statsErr);
-        handleFirestoreError(statsErr, OperationType.WRITE, 'stats/global');
-      }
-
-      // 4. Save to local storage for instant access
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
       setSubmittedData(payload);
+      setErrorMessage('');
 
-      // 5. Send to Formspree if user requested newsletter
+      // Cloud Persistence: Save personal response to Firestore
+      if (auth.currentUser) {
+        const userDocRef = doc(db, 'user_responses', auth.currentUser.uid);
+        setDoc(userDocRef, payload).catch(err => {
+          console.error("Failed to persist personal survey to cloud:", err);
+        });
+      }
+
+      // Gửi kết quả đến Formspree nếu người dùng muốn nhận thư gợi ý
       if (wantsNewsletter && email.trim()) {
         fetch('https://formspree.io/f/xvkgynoj', {
           method: 'POST',
@@ -447,10 +350,75 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
         }).catch(err => console.error('Formspree error:', err));
       }
 
-      // 6. Confetti & Celebratory Modal
+      // Sync with Firestore using Transaction
+      const updateFirestoreStats = async () => {
+        try {
+          const docRef = doc(db, 'stats', 'global');
+          await runTransaction(db, async (transaction) => {
+            const sfDoc = await transaction.get(docRef);
+            if (!sfDoc.exists()) {
+              transaction.set(docRef, INITIAL_SURVEY_STATS);
+              return;
+            }
+
+            const current = sfDoc.data() as SurveyStatsData;
+            const updated: SurveyStatsData = {
+              ...current,
+              totalParticipants: current.totalParticipants + 1,
+              ageGroup: {
+                ...current.ageGroup,
+                [ageGroup as any]: (current.ageGroup[ageGroup as keyof typeof current.ageGroup] || 0) + 1,
+              },
+              booksPerYear: {
+                ...current.booksPerYear,
+                [booksPerYear as any]: (current.booksPerYear[booksPerYear as keyof typeof current.booksPerYear] || 0) + 1,
+              },
+              readingFormats: { ...current.readingFormats },
+              favoriteGenres: { ...current.favoriteGenres },
+              readingMotivations: { ...current.readingMotivations },
+              readingBarriers: { ...current.readingBarriers },
+              buyingHabits: { ...current.buyingHabits },
+              readingEnvironments: { ...current.readingEnvironments },
+            };
+
+            readingFormats.forEach((fmt) => {
+              updated.readingFormats[fmt] = (updated.readingFormats[fmt] || 0) + 1;
+            });
+
+            favoriteGenres.forEach((gnr) => {
+              updated.favoriteGenres[gnr] = (updated.favoriteGenres[gnr] || 0) + 1;
+            });
+
+            readingMotivations.forEach((mot) => {
+              updated.readingMotivations[mot] = (updated.readingMotivations[mot] || 0) + 1;
+            });
+
+            readingBarriers.forEach((barr) => {
+              updated.readingBarriers[barr] = (updated.readingBarriers[barr] || 0) + 1;
+            });
+
+            buyingHabits.forEach((hab) => {
+              updated.buyingHabits[hab] = (updated.buyingHabits[hab] || 0) + 1;
+            });
+
+            readingEnvironments.forEach((env) => {
+              updated.readingEnvironments[env] = (updated.readingEnvironments[env] || 0) + 1;
+            });
+
+            transaction.update(docRef, updated as any);
+            setSurveyStats(updated);
+          });
+        } catch (e) {
+          handleFirestoreError(e, OperationType.WRITE, 'stats/global');
+        }
+      };
+
+      updateFirestoreStats();
+
+      // Confetti celebratory burst & Show Framer Motion Celebratory Modal
       confetti({
-        particleCount: 120,
-        spread: 85,
+        particleCount: 100,
+        spread: 80,
         origin: { y: 0.5 },
         colors: ['#B56D4F', '#6B7A6E', '#EBE5D9', '#FAF7F0', '#D4A373'],
       });
@@ -458,10 +426,8 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
       setShowCelebrationModal(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      console.error('Error saving survey:', err);
-      setErrorMessage('Có lỗi xảy ra khi lưu dữ liệu lên hệ thống. Xin vui lòng thử lại.');
-    } finally {
-      setIsSubmitting(false);
+      console.error('Error saving survey', err);
+      setErrorMessage('Có lỗi xảy ra khi lưu dữ liệu. Xin thử lại.');
     }
   };
 
@@ -476,88 +442,38 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
       setReadingBarriers(submittedData.readingBarriers || []);
       setBuyingHabits(submittedData.buyingHabits || []);
       setReadingEnvironments(submittedData.readingEnvironments || []);
-      setWantsNewsletter(submittedData.wantsNewsletter ?? null);
+      setWantsNewsletter(submittedData.wantsNewsletter || false);
       setEmail(submittedData.email || '');
     }
     setSubmittedData(null);
   };
 
   const handleDeleteData = async () => {
-    if (!window.confirm('Bạn có chắc muốn xóa phiếu khảo sát của bạn trên hệ thống để làm lại từ đầu? Số liệu đóng góp của bạn sẽ được hoàn trả sạch sẽ.')) {
-      return;
-    }
-    localStorage.removeItem(STORAGE_KEY);
-    
-    // Cloud Persistence: Remove personal response from Firestore & decrement stats
-    const activeUser = auth.currentUser || user || getStoredAuthUser();
-    if (activeUser && !activeUser.isAnonymous) {
-      try {
-        const uid = activeUser.uid;
-        const userDocRef = doc(db, 'user_responses', uid);
-        await deleteDoc(userDocRef);
-
-        if (submittedData) {
-          const statsDocRef = doc(db, 'stats', 'global');
-          await runTransaction(db, async (t) => {
-            const snap = await t.get(statsDocRef);
-            if (!snap.exists()) return;
-            const cur = snap.data() as SurveyStatsData;
-            const updated: SurveyStatsData = {
-              ...cur,
-              totalParticipants: Math.max(0, (cur.totalParticipants || 1) - 1),
-              ageGroup: { ...(cur.ageGroup || {}) },
-              booksPerYear: { ...(cur.booksPerYear || {}) },
-              readingFormats: { ...(cur.readingFormats || {}) },
-              favoriteGenres: { ...(cur.favoriteGenres || {}) },
-              readingMotivations: { ...(cur.readingMotivations || {}) },
-              readingBarriers: { ...(cur.readingBarriers || {}) },
-              buyingHabits: { ...(cur.buyingHabits || {}) },
-              readingEnvironments: { ...(cur.readingEnvironments || {}) },
-            };
-            if (submittedData.ageGroup && updated.ageGroup[submittedData.ageGroup as keyof typeof updated.ageGroup] !== undefined) {
-              updated.ageGroup[submittedData.ageGroup as keyof typeof updated.ageGroup] = Math.max(0, updated.ageGroup[submittedData.ageGroup as keyof typeof updated.ageGroup] - 1);
-            }
-            if (submittedData.booksPerYear && updated.booksPerYear[submittedData.booksPerYear as keyof typeof updated.booksPerYear] !== undefined) {
-              updated.booksPerYear[submittedData.booksPerYear as keyof typeof updated.booksPerYear] = Math.max(0, updated.booksPerYear[submittedData.booksPerYear as keyof typeof updated.booksPerYear] - 1);
-            }
-            (submittedData.readingFormats || []).forEach(f => {
-              if (updated.readingFormats[f] !== undefined) updated.readingFormats[f] = Math.max(0, updated.readingFormats[f] - 1);
-            });
-            (submittedData.favoriteGenres || []).forEach(g => {
-              if (updated.favoriteGenres[g] !== undefined) updated.favoriteGenres[g] = Math.max(0, updated.favoriteGenres[g] - 1);
-            });
-            (submittedData.readingMotivations || []).forEach(m => {
-              if (updated.readingMotivations[m] !== undefined) updated.readingMotivations[m] = Math.max(0, updated.readingMotivations[m] - 1);
-            });
-            (submittedData.readingBarriers || []).forEach(b => {
-              if (updated.readingBarriers[b] !== undefined) updated.readingBarriers[b] = Math.max(0, updated.readingBarriers[b] - 1);
-            });
-            (submittedData.buyingHabits || []).forEach(h => {
-              if (updated.buyingHabits[h] !== undefined) updated.buyingHabits[h] = Math.max(0, updated.buyingHabits[h] - 1);
-            });
-            (submittedData.readingEnvironments || []).forEach(e => {
-              if (updated.readingEnvironments[e] !== undefined) updated.readingEnvironments[e] = Math.max(0, updated.readingEnvironments[e] - 1);
-            });
-            t.set(statsDocRef, updated);
-            setSurveyStats(updated);
-          });
+    if (window.confirm('Bạn có chắc muốn xóa câu trả lời của bạn trên thiết bị này và trên đám mây để làm lại khảo sát mới? (Số người tham gia chung của cộng đồng vẫn được bảo toàn)')) {
+      localStorage.removeItem(STORAGE_KEY);
+      
+      // Cloud Persistence: Remove personal response from Firestore
+      if (auth.currentUser) {
+        try {
+          const userDocRef = doc(db, 'user_responses', auth.currentUser.uid);
+          await deleteDoc(userDocRef);
+        } catch (err) {
+          console.error("Failed to delete cloud response:", err);
         }
-      } catch (err) {
-        console.error("Failed to delete cloud response:", err);
       }
-    }
 
-    setSubmittedData(null);
-    setAgeGroup(null);
-    setBooksPerYear(null);
-    setReadingFormats([]);
-    setFavoriteGenres([]);
-    setReadingMotivations([]);
-    setReadingBarriers([]);
-    setBuyingHabits([]);
-    setReadingEnvironments([]);
-    setEmail('');
-    setWantsNewsletter(null);
+      setSubmittedData(null);
+      setAgeGroup(null);
+      setBooksPerYear(null);
+      setReadingFormats([]);
+      setFavoriteGenres([]);
+      setReadingMotivations([]);
+      setReadingBarriers([]);
+      setBuyingHabits([]);
+      setReadingEnvironments([]);
+      setEmail('');
+      setWantsNewsletter(false);
+    }
   };
 
   return (
@@ -612,38 +528,30 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
         {/* Row 5.1: Header trang */}
         <section className="py-14 sm:py-20 border-b border-white/10 text-center px-4 sm:px-6 lg:px-8 bg-black/40 backdrop-blur-sm">
           <div className="max-w-4xl mx-auto">
-            {!isUserLoggedIn ? (
+            {!user && (
               <motion.div 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-8 p-4 sm:p-5 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 text-white text-sm shadow-xl"
+                className="mb-10 p-8 bg-white/10 backdrop-blur-md border-2 border-[#B56D4F] rounded-3xl text-center shadow-2xl"
               >
-                <div className="flex items-center gap-3 text-left">
-                  <div className="w-10 h-10 rounded-xl bg-[#B56D4F] text-white flex items-center justify-center shrink-0 shadow-md">
-                    <LogIn size={20} />
-                  </div>
-                  <div>
-                    <span className="font-lora font-bold block text-sm sm:text-base text-white">
-                      Yêu cầu đăng nhập tài khoản để làm khảo sát
-                    </span>
-                    <span className="font-lora text-xs text-white/80">
-                      {user?.isAnonymous 
-                        ? 'Bạn đang ở phiên Khách ẩn danh. Vui lòng đăng nhập tài khoản chính thức để thực hiện khảo sát.'
-                        : 'Vui lòng đăng nhập bằng Google hoặc Email để bắt đầu tham gia và ghi nhận kết quả.'}
-                    </span>
-                  </div>
+                <div className="w-16 h-16 bg-[#B56D4F] rounded-2xl flex items-center justify-center mx-auto mb-4 text-white shadow-lg">
+                  <LogIn size={32} />
                 </div>
+                <h3 className="font-playfair text-xl sm:text-2xl font-bold text-white mb-2">Chào bạn! Bạn chưa đăng nhập</h3>
+                <p className="font-lora text-white/80 text-sm sm:text-base max-w-md mx-auto mb-6">
+                  Vui lòng đăng nhập để bắt đầu tham gia khảo sát và xem kết quả phân tích thói quen đọc sách của bạn.
+                </p>
                 <button
-                  type="button"
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="px-6 py-2.5 bg-[#B56D4F] hover:bg-[#9A5A3F] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 shrink-0 cursor-pointer flex items-center gap-2"
+                  className="px-8 py-3.5 bg-[#B56D4F] hover:bg-[#9A5A3F] text-white text-sm font-bold uppercase tracking-widest rounded-xl transition-all shadow-xl active:scale-95 cursor-pointer"
                 >
-                  <LogIn size={15} />
-                  <span>Đăng nhập ngay</span>
+                  Đăng nhập ngay
                 </button>
               </motion.div>
-            ) : user ? (
-              <div className="mb-8 inline-flex flex-col sm:flex-row items-center gap-4 px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl text-white/90 text-sm">
+            )}
+
+            {user && (
+              <div className="mb-10 inline-flex flex-col sm:flex-row items-center gap-4 px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl text-white/90 text-sm">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-[#B56D4F] flex items-center justify-center text-xs font-bold border-2 border-white/20 overflow-hidden shadow-lg">
                     {customAvatar ? (
@@ -655,18 +563,60 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
                     )}
                   </div>
                   <div className="text-left">
-                    <span className="font-lora block text-xs opacity-70">Độc giả đã xác thực</span>
-                    <span className="font-lora font-bold text-base">{customName || user.displayName || user.email?.split('@')[0]}</span>
+                    <span className="font-lora block text-xs opacity-70">Chào mừng bạn</span>
+                    <span className="font-lora font-bold text-base">{user.isAnonymous ? 'Khách ẩn danh' : (customName || user.displayName || user.email?.split('@')[0])}</span>
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2 px-3 py-1 bg-green-500/20 border border-green-500/40 rounded-full text-[11px] font-bold text-green-300">
-                  <ShieldCheck size={13} />
-                  ĐÃ ĐĂNG NHẬP HỢP LỆ
-                </div>
+                {user.email && !user.emailVerified && !user.isAnonymous && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-[10px] font-bold text-amber-200">
+                    <AlertCircle size={12} />
+                    CHƯA XÁC THỰC EMAIL
+                  </div>
+                )}
+                
+                <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
               </div>
-            ) : null}
+            )}
 
+            {(isFirebaseOffline || isAuthDisabled) && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mb-10 p-6 bg-amber-50 border-2 border-amber-200 text-[#7F5539] rounded-3xl text-sm font-lora shadow-xl"
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-amber-200 flex items-center justify-center text-amber-700">
+                    <AlertCircle size={24} />
+                  </div>
+                  <strong className="text-lg font-playfair">
+                    {isAuthDisabled ? '⚠️ Cần kích hoạt Đăng nhập Ẩn danh' : '⚠️ Đang thiết lập Cơ sở dữ liệu'}
+                  </strong>
+                </div>
+                <div className="space-y-3 text-left leading-relaxed">
+                  {isAuthDisabled ? (
+                    <>
+                      <p>Để lưu trữ lựa chọn của bạn vĩnh viễn, bạn vui lòng kích hoạt <b>Anonymous Auth</b>:</p>
+                      <ol className="list-decimal list-inside space-y-2 ml-2">
+                        <li>Vào <b>Firebase Console</b> {'>'} <b>Authentication</b> {'>'} <b>Sign-in method</b>.</li>
+                        <li>Nhấn <b>Add new provider</b> và chọn <b>Anonymous</b>.</li>
+                        <li>Bật công tắc <b>Enable</b> và nhấn <b>Save</b>.</li>
+                      </ol>
+                    </>
+                  ) : (
+                    <>
+                      <p>Ứng dụng đang gặp khó khăn khi kết nối với Firebase. Để kích hoạt tính năng lưu trữ vĩnh viễn, bạn vui lòng thực hiện <b>3 bước sau</b>:</p>
+                      <ol className="list-decimal list-inside space-y-2 ml-2">
+                        <li>Vào <b>Firebase Console</b> (console.firebase.google.com).</li>
+                        <li>Chọn Project <b>sachhay-ece64</b> {'>'} <b>Firestore Database</b>.</li>
+                        <li>Nhấn nút <b>"Create Database"</b>, chọn <b>"Start in production mode"</b> và nhấn <b>"Done"</b>.</li>
+                      </ol>
+                    </>
+                  )}
+                  <p className="pt-2 italic opacity-80 text-xs">Sau khi hoàn thành, hãy làm mới (F5) trang này để hệ thống tự động kết nối lại.</p>
+                </div>
+              </motion.div>
+            )}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-[0.2em] text-[#EBE5D9] bg-black/40 border border-white/25 backdrop-blur-md shadow-lg mb-4">
               <span className="font-sans">CHUYÊN ĐỀ 04 · KHẢO SÁT BẠN ĐỌC TƯƠNG TÁC</span>
             </div>
@@ -702,67 +652,13 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
 
         {/* Row 5.2 & Row 5.3: Survey Body or Completed State */}
         <section className="py-12 sm:py-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {!isUserLoggedIn ? (
-            /* Login Gate when not signed in */
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="vintage-card-bg bg-[#FAF7F0]/95 backdrop-blur-md rounded-3xl p-8 sm:p-14 border-2 border-[#D6CDBF] shadow-2xl max-w-2xl mx-auto text-center space-y-6"
-            >
-              <div className="w-20 h-20 bg-[#B56D4F]/10 border-2 border-[#B56D4F] rounded-3xl flex items-center justify-center mx-auto text-[#B56D4F] shadow-md">
-                <LogIn size={36} />
+          {!user ? (
+            <div className="vintage-card-bg bg-[#FAF7F0]/95 backdrop-blur-md rounded-3xl p-12 sm:p-20 border-2 border-dashed border-[#D6CDBF] text-center flex flex-col items-center justify-center space-y-6">
+              <div className="w-20 h-20 rounded-full bg-[#EBE5D9] text-[#6B635A] flex items-center justify-center opacity-50">
+                <ShieldCheck size={48} />
               </div>
-
-              <div className="space-y-2">
-                <span className="text-xs uppercase tracking-[0.2em] text-[#B56D4F] font-bold font-sans">
-                  QUY ĐỊNH THAM GIA KHẢO SÁT
-                </span>
-                <h3 className="font-playfair text-2xl sm:text-3xl font-bold text-[#3A3530]">
-                  Phải đăng nhập mới được làm khảo sát
-                </h3>
-                <p className="font-lora text-sm sm:text-base text-[#6B635A] max-w-md mx-auto leading-relaxed">
-                  Để đảm bảo tính xác thực của nghiên cứu cộng đồng, mỗi độc giả cần đăng nhập tài khoản trước khi thực hiện khảo sát. Mỗi tài khoản chỉ đóng góp 1 phiếu duy nhất.
-                </p>
-              </div>
-
-              {/* 3 feature highlights */}
-              <div className="bg-[#FAF7F0] p-5 rounded-2xl border border-[#D6CDBF] text-left space-y-3 text-xs sm:text-sm font-lora text-[#3A3530]">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 size={18} className="text-[#4A7C59] shrink-0" />
-                  <span>Xác thực danh tính bạn đọc thực tế, chống spam và trùng lặp</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 size={18} className="text-[#4A7C59] shrink-0" />
-                  <span>Lưu trữ vĩnh viễn và đồng bộ câu trả lời an toàn trên Firebase Cloud</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 size={18} className="text-[#4A7C59] shrink-0" />
-                  <span>Mở khóa toàn bộ biểu đồ phân tích xu hướng ngay sau khi gửi bài</span>
-                </div>
-              </div>
-
-              {user?.isAnonymous && (
-                <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl text-xs text-amber-900 font-lora text-left flex items-start gap-2">
-                  <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                  <span>Bạn đang duyệt ở chế độ Khách ẩn danh. Vui lòng đăng nhập bằng Google hoặc Email của bạn để mở khóa bảng câu hỏi khảo sát.</span>
-                </div>
-              )}
-
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="w-full sm:w-auto px-8 py-4 bg-[#B56D4F] hover:bg-[#9A5A3F] text-white font-playfair font-bold text-base rounded-xl transition-all shadow-xl active:scale-95 cursor-pointer flex items-center justify-center gap-3 mx-auto"
-                >
-                  <LogIn size={20} />
-                  <span>Đăng nhập ngay để làm khảo sát</span>
-                </button>
-                <p className="text-[11px] text-[#6B635A] font-lora mt-3">
-                  Hỗ trợ đăng nhập nhanh bằng tài khoản Google hoặc tài khoản Email cá nhân.
-                </p>
-              </div>
-            </motion.div>
+              <h3 className="font-playfair text-2xl text-[#6B635A]">Vui lòng đăng nhập để xem nội dung</h3>
+            </div>
           ) : (submittedData && submittedData.submittedAt) ? (
             /* Row 5.3: Trạng thái “Đã làm khảo sát” - Max width 5xl for spacious chart breathing room */
             <div className="vintage-card-bg bg-[#FAF7F0]/95 backdrop-blur-md rounded-3xl p-6 sm:p-10 md:p-12 border-2 border-[#D6CDBF] shadow-2xl max-w-5xl mx-auto text-center relative overflow-hidden">
@@ -1249,26 +1145,17 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
 
                   {/* Câu 9: Email nhận bản tin */}
                   <div className="border-t border-[#D6CDBF] pt-6">
-                    <div className="flex items-baseline justify-between mb-2">
-                      <label className="font-playfair text-base sm:text-lg font-bold text-[#3A3530]">
-                        9. Bạn có muốn nhận thư gợi ý sách hay mỗi tháng qua email?
-                      </label>
-                      <span className="text-xs text-[#B56D4F] font-lora">
-                        {wantsNewsletter === null
-                          ? '(Chưa chọn)'
-                          : wantsNewsletter
-                          ? '(Đã chọn: Có nhận thư)'
-                          : '(Đã chọn: Không nhận)'}
-                      </span>
-                    </div>
+                    <label className="font-playfair text-base sm:text-lg font-bold text-[#3A3530] block mb-2">
+                      9. Bạn có muốn nhận thư gợi ý sách hay mỗi tháng qua email?
+                    </label>
                     <div className="flex items-center gap-6 mb-3">
                       <label className="flex items-center gap-2 cursor-pointer font-lora text-sm">
                         <input
                           type="radio"
                           name="newsletter"
-                          checked={wantsNewsletter === true}
+                          checked={wantsNewsletter}
                           onChange={() => setWantsNewsletter(true)}
-                          className="accent-[#B56D4F] cursor-pointer"
+                          className="accent-[#B56D4F]"
                         />
                         <span>Có, hãy gửi cho mình</span>
                       </label>
@@ -1276,80 +1163,49 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
                         <input
                           type="radio"
                           name="newsletter"
-                          checked={wantsNewsletter === false}
+                          checked={!wantsNewsletter}
                           onChange={() => {
                             setWantsNewsletter(false);
                             setEmail('');
                           }}
-                          className="accent-[#B56D4F] cursor-pointer"
+                          className="accent-[#B56D4F]"
                         />
                         <span>Không, cảm ơn</span>
                       </label>
                     </div>
 
-                    {wantsNewsletter === true && (
-                      <motion.div 
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="mt-3 space-y-1.5"
-                      >
-                        <label className="text-xs font-semibold text-[#6B635A] font-lora">
-                          Địa chỉ email nhận thư gợi ý sách: <span className="text-red-500">*</span>
-                        </label>
+                    {wantsNewsletter && (
+                      <div className="mt-2">
                         <input
                           type="email"
                           placeholder="Nhập email của bạn (ví dụ: banchuyen@gmail.com)"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          required
                           className="w-full p-3.5 bg-[#FAF7F0] border border-[#D6CDBF] rounded-xl text-sm font-lora text-[#3A3530] focus:outline-hidden focus:border-[#B56D4F]"
                         />
-                      </motion.div>
+                      </div>
                     )}
                   </div>
 
-                  {/* Submit button: Only available when user has interacted with all questions */}
+                  {/* Submit button */}
                   <div className="pt-4">
                     <button
                       type="submit"
-                      disabled={!isFormValid || isSubmitting}
-                      className={`w-full py-4 border font-playfair font-bold text-base sm:text-lg rounded-xl transition-all shadow-md flex items-center justify-center gap-3 ${
-                        isFormValid && !isSubmitting
-                          ? 'bg-[#B56D4F] hover:bg-[#9A5A3F] border-[#9A5A3F] text-white cursor-pointer active:scale-98 shadow-lg'
-                          : 'bg-[#D6CDBF]/50 border-[#D6CDBF] text-[#8C8275] cursor-not-allowed opacity-75'
+                      disabled={completedQuestionsCount < totalQuestions}
+                      className={`w-full py-4 font-playfair font-bold text-base sm:text-lg rounded-xl transition-all shadow-md flex items-center justify-center gap-3 active:scale-98 ${
+                        completedQuestionsCount < totalQuestions
+                          ? 'bg-[#D6CDBF] text-[#6B635A] cursor-not-allowed opacity-70'
+                          : 'bg-[#B56D4F] hover:bg-[#9A5A3F] text-white cursor-pointer'
                       }`}
                     >
-                      {isSubmitting ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Đang ghi nhận kết quả lên hệ thống...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Gửi kết quả</span>
-                          <Send size={18} />
-                        </>
-                      )}
+                      <span>{completedQuestionsCount < totalQuestions ? `Hoàn thành ${completedQuestionsCount}/${totalQuestions} câu để gửi` : 'Gửi khảo sát của bạn'}</span>
+                      <Send size={18} />
                     </button>
-                    
-                    <div className="text-center mt-3 text-xs font-lora">
-                      {!isFormValid ? (
-                        <div className="text-amber-700 font-medium flex items-center justify-center gap-1.5">
-                          <AlertCircle size={14} className="shrink-0" />
-                          <span>
-                            Vui lòng hoàn thành tất cả các câu hỏi để kích hoạt nút gửi kết quả ({completedQuestionsCount}/{totalQuestions} câu đã hoàn tất).
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="text-[#4A7C59] font-medium flex items-center justify-center gap-1.5">
-                          <CheckCircle2 size={14} className="shrink-0" />
-                          <span>Bạn đã hoàn thành đủ 9 câu hỏi. Sẵn sàng gửi kết quả và cập nhật số liệu!</span>
-                        </div>
-                      )}
-                      <p className="text-[#6B635A] mt-1.5 text-[11px]">
-                        Dữ liệu được lưu trữ bảo mật trên Firebase và đồng bộ tức thì cùng cộng đồng bạn đọc.
-                      </p>
-                    </div>
+                    <p className="text-center text-xs text-[#6B635A] font-lora mt-2.5">
+                      {completedQuestionsCount < totalQuestions 
+                        ? 'Vui lòng điền đủ thông tin để chia sẻ gu đọc của bạn.'
+                        : 'Dữ liệu được lưu trữ trên trình duyệt của bạn và bảo mật tuyệt đối.'}
+                    </p>
                   </div>
                 </form>
               </div>
@@ -1467,7 +1323,7 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
               </h3>
 
               <p className="text-xs sm:text-sm text-[#6B635A] leading-relaxed mb-6">
-                Bạn đã hoàn thành toàn bộ 7 câu hỏi khảo sát thói quen đọc sách. Phiếu đóng góp của bạn đã được ghi nhận vào cơ sở dữ liệu cộng đồng.
+                Bạn đã hoàn thành toàn bộ {totalQuestions} câu hỏi khảo sát thói quen đọc sách. Phiếu đóng góp của bạn đã được ghi nhận vào cơ sở dữ liệu cộng đồng.
               </p>
 
               {/* Stats Highlight Banner */}
