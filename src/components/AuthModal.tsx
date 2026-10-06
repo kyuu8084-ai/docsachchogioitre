@@ -71,14 +71,17 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       onClose();
     } catch (err: any) {
       console.error("Google Sign-in failed:", err);
-      if (err.code === 'auth/configuration-not-found') {
+      const errorCode = err.code;
+      if (errorCode === 'auth/configuration-not-found') {
         setError('Google Login chưa được bật trong Firebase Console.');
-      } else if (err.code === 'auth/unauthorized-domain') {
+      } else if (errorCode === 'auth/unauthorized-domain') {
         setError('Tên miền này chưa được cấp phép trong Firebase Console. Vui lòng kiểm tra cài đặt Authorized Domains.');
-      } else if (err.code === 'auth/popup-closed-by-user') {
+      } else if (errorCode === 'auth/popup-closed-by-user') {
         setError('Cửa sổ đăng nhập đã bị đóng.');
+      } else if (errorCode === 'auth/operation-not-allowed') {
+        setError('Phương thức đăng nhập bằng Google chưa được bật. Hãy liên hệ quản trị viên hoặc kiểm tra Firebase Console.');
       } else {
-        setError(`Đăng nhập thất bại: ${err.message || 'Lỗi không xác định'}`);
+        setError(`Đăng nhập Google thất bại (${errorCode}): ${err.message || 'Lỗi không xác định'}`);
       }
     } finally {
       setIsLoading(false);
@@ -93,7 +96,12 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       onClose();
     } catch (err: any) {
       console.error("Guest Sign-in failed:", err);
-      setError('Đăng nhập khách thất bại.');
+      const errorCode = err.code;
+      if (errorCode === 'auth/operation-not-allowed') {
+        setError('Đăng nhập khách (Anonymous) chưa được bật trong Firebase Console. Vui lòng bật nó để sử dụng tính năng này.');
+      } else {
+        setError(`Đăng nhập khách thất bại (${errorCode}): ${err.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -122,12 +130,14 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       }
     } catch (err: any) {
       console.error("Email Auth failed:", err);
-      if (err.code === 'auth/user-not-found') setError('Không tìm thấy tài khoản.');
-      else if (err.code === 'auth/wrong-password') setError('Mật khẩu không chính xác.');
-      else if (err.code === 'auth/email-already-in-use') setError('Email đã được sử dụng.');
-      else if (err.code === 'auth/weak-password') setError('Mật khẩu quá yếu (tối thiểu 6 ký tự).');
-      else if (err.code === 'auth/invalid-email') setError('Email không hợp lệ.');
-      else setError('Xác thực thất bại. Vui lòng kiểm tra lại.');
+      const errorCode = err.code;
+      if (errorCode === 'auth/user-not-found') setError('Không tìm thấy tài khoản.');
+      else if (errorCode === 'auth/wrong-password') setError('Mật khẩu không chính xác.');
+      else if (errorCode === 'auth/email-already-in-use') setError('Email đã được sử dụng.');
+      else if (errorCode === 'auth/weak-password') setError('Mật khẩu quá yếu (tối thiểu 6 ký tự).');
+      else if (errorCode === 'auth/invalid-email') setError('Email không hợp lệ.');
+      else if (errorCode === 'auth/operation-not-allowed') setError('Đăng nhập bằng Email/Password chưa được bật trong Firebase Console.');
+      else setError(`Xác thực thất bại (${errorCode}): ${err.message}`);
     } finally {
       setIsLoading(false);
     }

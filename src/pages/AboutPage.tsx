@@ -87,18 +87,6 @@ const THEME_TOPICS: ThemeTopicItem[] = [
     pageId: 'survey',
     icon: CheckCircle2,
   },
-  {
-    id: 'community',
-    number: '05',
-    categoryTag: 'CHUYÊN ĐỀ 05 · SỨ MỆNH & ĐỒNG HÀNH',
-    title: 'Cộng đồng & Không gian kết nối',
-    tagline: 'Nuôi dưỡng văn hóa đọc sâu sắc & trao đổi phi thương mại',
-    description: 'Dự án phi lợi nhuận do những người trẻ khởi xướng nhằm kết nối độc giả yêu sách qua các buổi cà phê đàm luận văn hóa, câu lạc bộ đọc sách cuối tuần và mạng lưới chia sẻ sách cộng đồng tại các thành phố lớn.',
-    keyMetric: '100% phi lợi nhuận & vì bạn đọc',
-    highlights: ['Không gian cà phê sách Hà Nội & TP.HCM', 'Câu lạc bộ chia sẻ góc nhìn văn học', 'Lan tỏa phương pháp đọc lành mạnh'],
-    pageId: 'about',
-    icon: Users,
-  },
 ];
 
 export default function AboutPage({ onNavigate }: AboutPageProps) {
@@ -168,21 +156,21 @@ export default function AboutPage({ onNavigate }: AboutPageProps) {
             </div>
 
             <h2 className="font-playfair text-3xl sm:text-4xl font-medium text-[#fdfbf6] leading-tight drop-shadow-sm">
-              Kết nối người trẻ với thế giới kỳ diệu của những trang sách
+              Lan tỏa tình yêu sách và văn hóa đọc sâu
             </h2>
 
             {/* Văn bản được đóng khung thẻ kính mờ cao cấp với độ nét tối đa */}
             <div className="bg-black/40 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-white/20 space-y-4 shadow-xl">
               <p className="text-sm sm:text-base text-white/95 font-light leading-relaxed">
-                <strong className="text-white font-medium">Đọc & Trẻ</strong> ra đời như một không gian tĩnh lặng giữa nhịp sống đô thị gấp gáp. Chúng mình là một nhóm những người trẻ yêu sách, say mê những buổi sáng ngồi bên khung cửa gỗ, ngửi mùi cà phê phin và lật từng trang giấy in thơm nồng.
+                <strong className="text-white font-medium">Đọc & Trẻ</strong> ra đời như một nỗ lực nhằm gìn giữ giá trị của sự tập trung. Chúng mình là những người trẻ say mê cảm giác lật từng trang giấy in, nơi mỗi từ ngữ đều mang sức nặng của tri thức và sự chiêm nghiệm.
               </p>
 
               <p className="text-sm sm:text-base text-white/90 font-light leading-relaxed">
-                Chúng mình nhận thấy nhiều bạn bè đồng trang lứa đang loay hoay trước áp lực đồng trang lứa, cảm giác kiệt sức và bẫy dopamine từ các thiết bị thông minh. Sách không phải là nghĩa vụ nặng nề hay điều gì xa vời của giới học thuật, mà là người bạn tri kỷ sẵn sàng lắng nghe, xoa dịu và mở ra những chân trời tư duy độc lập.
+                Chúng mình nhận thấy nhiều bạn trẻ đang loay hoay trước áp lực số và bẫy dopamine từ các thiết bị thông minh. Sách chính là chiếc mỏ neo giúp bạn định vị lại bản thân, xoa dịu tâm hồn và mở ra những chân trời tư duy độc lập.
               </p>
 
               <p className="text-sm sm:text-base text-white/90 font-light leading-relaxed">
-                Tại đây, chúng mình không phán xét việc bạn đọc sách giấy hay sách điện tử, đọc triết học hay truyện tranh. Mọi hình thức tiếp nhận tri thức đều đáng trân trọng nếu nó giúp bạn mở rộng lòng mình, bao dung hơn với cuộc đời và tự tin bước tiếp trên hành trình trưởng thành.
+                Tại đây, chúng mình tôn trọng mọi hình thức tiếp nhận tri thức. Dù bạn chọn sách giấy hay điện tử, triết học hay tiểu thuyết, điều quan trọng nhất là bạn dám dành thời gian để đối thoại với chính mình qua từng trang sách.
               </p>
             </div>
 
@@ -214,10 +202,6 @@ export default function AboutPage({ onNavigate }: AboutPageProps) {
                   <a href="mailto:docvatre@example.com" className="font-semibold text-[#c2ba9b] hover:text-[#d4ccad] transition-colors underline">
                     docvatre@example.com
                   </a>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MapPin size={16} className="text-[#c2ba9b] shrink-0" />
-                  <span>Không gian: Hiệu sách cà phê văn hóa, Hà Nội & TP. Hồ Chí Minh</span>
                 </div>
               </div>
 

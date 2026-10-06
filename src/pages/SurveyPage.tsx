@@ -102,7 +102,6 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
   const [readingMotivations, setReadingMotivations] = useState<string[]>([]);
   const [readingBarriers, setReadingBarriers] = useState<string[]>([]);
   const [buyingHabits, setBuyingHabits] = useState<string[]>([]);
-  const [readingEnvironments, setReadingEnvironments] = useState<string[]>([]);
   const [wantsNewsletter, setWantsNewsletter] = useState<boolean>(false);
   const [email, setEmail] = useState<string>('');
   const [showCelebrationModal, setShowCelebrationModal] = useState<boolean>(false);
@@ -202,7 +201,7 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
     }
   }, []);
 
-  // Dynamic progress calculation based on completed questions (9 questions total)
+  // Dynamic progress calculation based on completed questions (8 questions total)
   const completedQuestionsCount = [
     Boolean(ageGroup),
     Boolean(booksPerYear),
@@ -211,11 +210,10 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
     readingMotivations.length > 0,
     readingBarriers.length > 0,
     buyingHabits.length > 0,
-    readingEnvironments.length > 0,
     !wantsNewsletter || Boolean(email.trim()),
   ].filter(Boolean).length;
 
-  const totalQuestions = 9;
+  const totalQuestions = 8;
   const surveyProgressPct = Math.round((completedQuestionsCount / totalQuestions) * 100);
 
   const handleFormatToggle = (format: string) => {
@@ -263,14 +261,6 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
     }
   };
 
-  const handleEnvironmentToggle = (item: string) => {
-    if (readingEnvironments.includes(item)) {
-      setReadingEnvironments(readingEnvironments.filter((e) => e !== item));
-    } else {
-      setReadingEnvironments([...readingEnvironments, item]);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!ageGroup || !booksPerYear) {
@@ -299,7 +289,6 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
       readingMotivations,
       readingBarriers,
       buyingHabits,
-      readingEnvironments,
       wantsNewsletter,
       submittedAt: new Date().toLocaleDateString('vi-VN', {
         day: '2-digit',
@@ -378,7 +367,6 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
               readingMotivations: { ...current.readingMotivations },
               readingBarriers: { ...current.readingBarriers },
               buyingHabits: { ...current.buyingHabits },
-              readingEnvironments: { ...current.readingEnvironments },
             };
 
             readingFormats.forEach((fmt) => {
@@ -399,10 +387,6 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
 
             buyingHabits.forEach((hab) => {
               updated.buyingHabits[hab] = (updated.buyingHabits[hab] || 0) + 1;
-            });
-
-            readingEnvironments.forEach((env) => {
-              updated.readingEnvironments[env] = (updated.readingEnvironments[env] || 0) + 1;
             });
 
             transaction.update(docRef, updated as any);
@@ -441,7 +425,6 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
       setReadingMotivations(submittedData.readingMotivations || []);
       setReadingBarriers(submittedData.readingBarriers || []);
       setBuyingHabits(submittedData.buyingHabits || []);
-      setReadingEnvironments(submittedData.readingEnvironments || []);
       setWantsNewsletter(submittedData.wantsNewsletter || false);
       setEmail(submittedData.email || '');
     }
@@ -470,7 +453,6 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
       setReadingMotivations([]);
       setReadingBarriers([]);
       setBuyingHabits([]);
-      setReadingEnvironments([]);
       setEmail('');
       setWantsNewsletter(false);
     }
@@ -704,17 +686,6 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
                       {submittedData.booksPerYear === '6-12' && '6 – 12 cuốn'}
                       {submittedData.booksPerYear === 'above-12' && 'Hơn 12 cuốn (Mọt sách chính hiệu)'}
                     </strong>
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <span className="text-[#6B635A] block">Hình thức đọc ưu tiên:</span>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      {submittedData.readingFormats.map((f, i) => (
-                        <span key={i} className="px-2.5 py-0.5 bg-[#EBE5D9] rounded-md text-xs text-[#3A3530] border border-[#D6CDBF]">
-                          {f}
-                        </span>
-                      ))}
-                    </div>
                   </div>
 
                   <div className="sm:col-span-2">
@@ -1104,49 +1075,10 @@ export default function SurveyPage({ onNavigate }: SurveyPageProps) {
                     </div>
                   </div>
 
-                  {/* New Câu 8: Reading Environments */}
-                  <div>
-                    <div className="flex items-baseline justify-between mb-3">
-                      <label className="font-playfair text-base sm:text-lg font-bold text-[#3A3530]">
-                        8. Không gian đọc sách lý tưởng của bạn:
-                      </label>
-                      <span className="text-xs text-[#6B635A] font-lora">(Chọn nhiều)</span>
-                    </div>
-                    <div className="space-y-2.5">
-                      {[
-                        'Tại nhà (phòng ngủ, ban công)',
-                        'Quán cà phê yên tĩnh',
-                        'Trên phương tiện công cộng (bus, tàu)',
-                        'Thư viện/không gian học tập',
-                        'Giờ nghỉ giải lao tại trường/chỗ làm',
-                      ].map((env) => {
-                        const isChecked = readingEnvironments.includes(env);
-                        return (
-                          <label
-                            key={env}
-                            className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer font-lora text-sm transition-all ${
-                              isChecked
-                                ? 'bg-[#FAF7F0] border-[#6B7A6E] text-[#6B7A6E] font-medium shadow-2xs'
-                                : 'bg-[#FAF7F0]/60 border-[#D6CDBF] text-[#3A3530] hover:bg-[#FAF7F0]'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isChecked}
-                              onChange={() => handleEnvironmentToggle(env)}
-                              className="accent-[#6B7A6E] w-4 h-4 cursor-pointer"
-                            />
-                            <span>{env}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Câu 9: Email nhận bản tin */}
+                  {/* Câu 8: Email nhận bản tin */}
                   <div className="border-t border-[#D6CDBF] pt-6">
                     <label className="font-playfair text-base sm:text-lg font-bold text-[#3A3530] block mb-2">
-                      9. Bạn có muốn nhận thư gợi ý sách hay mỗi tháng qua email?
+                      8. Bạn có muốn nhận thư gợi ý sách hay mỗi tháng qua email?
                     </label>
                     <div className="flex items-center gap-6 mb-3">
                       <label className="flex items-center gap-2 cursor-pointer font-lora text-sm">

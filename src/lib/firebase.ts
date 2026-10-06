@@ -40,9 +40,11 @@ async function testConnection() {
     await getDocFromServer(doc(db, 'test', 'connection'));
     console.log("✅ Firestore connection: READY");
   } catch (error: any) {
-    // We don't throw here to avoid crashing the app, but we log the specific reason
-    if (error.message && error.message.includes('the client is offline')) {
+    if (error.code === 'permission-denied') {
+      console.log("✅ Firestore connection: REACHABLE (Permissions restricted as expected)");
+    } else if (error.message && error.message.includes('the client is offline')) {
       console.error("❌ Firestore connection: OFFLINE. Please check your Firebase configuration or network.");
+      window.dispatchEvent(new CustomEvent('firebase-connection-failed'));
     } else {
       console.error("❌ Firestore connection: ERROR", error);
       if (error.code === 'unavailable' || (error.message && error.message.includes('offline'))) {

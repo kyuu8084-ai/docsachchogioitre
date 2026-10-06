@@ -38,7 +38,6 @@ export default function SurveyAnalysisCharts({
   const motivationColors = ['#B56D4F', '#4A7C59', '#D4A373', '#3D405B'];
   const barrierColors = ['#B56D4F', '#8C5E58', '#6B7A6E', '#D4A373'];
   const habitColors = ['#7F5539', '#588157', '#C08552', '#3D405B', '#8C5E58'];
-  const environmentColors = ['#4A7C59', '#D4A373', '#B56D4F', '#3D405B', '#7F5539'];
 
   // 1. Age (Recharts dataset)
   const ageRechartsData: RechartsPieItem[] = [
@@ -96,20 +95,11 @@ export default function SurveyAnalysisCharts({
     isUserChoice: userAnswer?.buyingHabits?.includes(habit),
   }));
 
-  // 8. Environments (Recharts dataset)
-  const environmentRechartsData: RechartsPieItem[] = Object.entries(stats.readingEnvironments || {}).map(([env, count], i) => ({
-    name: env,
-    value: count,
-    color: environmentColors[i % environmentColors.length],
-    isUserChoice: userAnswer?.readingEnvironments?.includes(env),
-  }));
-
   const totalFormatSelections = Object.values(stats.readingFormats || {}).reduce((a, b) => a + b, 0);
   const totalGenreSelections = Object.values(stats.favoriteGenres || {}).reduce((a, b) => a + b, 0);
   const totalMotivationSelections = Object.values(stats.readingMotivations || {}).reduce((a, b) => a + b, 0);
   const totalBarrierSelections = Object.values(stats.readingBarriers || {}).reduce((a, b) => a + b, 0);
   const totalHabitSelections = Object.values(stats.buyingHabits || {}).reduce((a, b) => a + b, 0);
-  const totalEnvironmentSelections = Object.values(stats.readingEnvironments || {}).reduce((a, b) => a + b, 0);
 
   return (
     <div className="w-full space-y-10">
@@ -687,68 +677,6 @@ export default function SurveyAnalysisCharts({
                       <span className={`flex items-center gap-1.5 ${isUserChoice ? 'font-bold text-[#B56D4F]' : 'text-[#3A3530]'}`}>
                         <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
                         {habit}
-                        {isUserChoice && (
-                          <span className="px-2 py-0.5 bg-[#B56D4F] text-white text-[10px] font-sans font-bold rounded-sm">
-                            Bạn đã chọn
-                          </span>
-                        )}
-                      </span>
-                      <div className="text-right">
-                        <span className="font-bold font-sans text-sm sm:text-base text-[#3A3530]">{pct}%</span>
-                        <span className="text-xs text-[#6B635A] ml-1">({count} người)</span>
-                      </div>
-                    </div>
-                    <div className="w-full h-3.5 bg-[#EBE5D9] rounded-full overflow-hidden p-0.5">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* 8. Reading Environments Analysis Chart */}
-        <div className="bg-[#FAF7F0] p-6 sm:p-8 rounded-3xl border border-[#D6CDBF] shadow-sm relative overflow-hidden">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-[#4A7C59] text-white flex items-center justify-center">
-              <PieChartIcon size={18} />
-            </div>
-            <div>
-              <h3 className="font-playfair font-bold text-lg text-[#3A3530]">Không gian đọc lý tưởng</h3>
-              <p className="text-[10px] text-[#6B635A] font-lora uppercase tracking-wider">Nơi tâm hồn bạn thuộc về</p>
-            </div>
-          </div>
-
-          {chartViewMode !== 'bar' && (
-            <div className="h-[220px] mb-8">
-              <RechartsCircularChart 
-                data={environmentRechartsData} 
-                total={totalEnvironmentSelections}
-                title="Không gian đọc lý tưởng"
-              />
-            </div>
-          )}
-
-          {chartViewMode !== 'pie' && (
-            <div className="space-y-4">
-              {Object.entries(stats.readingEnvironments || {}).map(([env, count], i) => {
-                const pct = totalEnvironmentSelections === 0 ? 0 : Math.round((count / totalEnvironmentSelections) * 100);
-                const isUserChoice = userAnswer?.readingEnvironments?.includes(env);
-                const color = environmentColors[i % environmentColors.length];
-
-                return (
-                  <div key={env} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs sm:text-sm font-lora">
-                      <span className={`flex items-center gap-1.5 ${isUserChoice ? 'font-bold text-[#B56D4F]' : 'text-[#3A3530]'}`}>
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                        {env}
                         {isUserChoice && (
                           <span className="px-2 py-0.5 bg-[#B56D4F] text-white text-[10px] font-sans font-bold rounded-sm">
                             Bạn đã chọn

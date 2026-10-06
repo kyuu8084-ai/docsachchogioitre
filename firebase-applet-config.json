@@ -1,12 +1,12 @@
 {
-  "projectId": "sachhay-ece64",
-  "appId": "1:299025468028:web:554e3045cd34c7b5d2d7f9",
-  "apiKey": "AIzaSyC7jZEQTDQvxJsGA_EWz3emNFjGa5IEFDc",
-  "authDomain": "sachhay-ece64.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-remixremixremixc-8272fe0c-7135-465b-9496-5e915750b9a4",
-  "storageBucket": "sachhay-ece64.firebasestorage.app",
-  "messagingSenderId": "299025468028",
-  "measurementId": "",
-  "oAuthClientId": "299025468028-2nueln8frfomjkig3fvliire4j5p46av.apps.googleusercontent.com",
+  "projectId": "sachhaychonguoitre",
+  "appId": "1:760073324008:web:3d4aa7dc361902212dd05d",
+  "apiKey": "AIzaSyB2TTIxx6J-oWbGjm9-Korr7xHVK9T8V9I",
+  "authDomain": "://firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "sachhaychonguoitre.firebasestorage.app",
+  "messagingSenderId": "760073324008",
+  "measurementId": "G-9WY3RES3R4",
+  "oAuthClientId": "",
   "recaptchaSiteKey": ""
 }

@@ -1,13 +1,18 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Default deny catch-all
+    // Global Safety Net
     match /{document=**} {
       allow read, write: if false;
     }
 
-    function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     function incoming() {
@@ -18,52 +23,42 @@ service cloud.firestore {
       return resource.data;
     }
 
-    // --- Confessions Rules ---
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Confessions rules
     match /confessions/{confessionId} {
-      function isValidConfession(data) {
-        return data.text is string && data.text.size() <= 500
-            && data.author is string && data.author.size() <= 50
-            && data.likes is int
-            && data.createdAt is timestamp
-            && (!('isArchived' in data) || data.isArchived is bool);
-      }
-
       allow read: if true;
-      
-      allow create: if isValidId(confessionId) 
-                   && isValidConfession(incoming())
-                   && incoming().likes == 0
-                   && incoming().createdAt == request.time;
-      
-      allow update: if isValidConfession(incoming())
-                   && (
-                     // Action: Like
-                     (incoming().diff(existing()).affectedKeys().hasOnly(['likes']) && incoming().likes == existing().likes + 1) ||
-                     // Action: Archive (Internal use simulation)
-                     (incoming().diff(existing()).affectedKeys().hasOnly(['isArchived']))
-                   );
+      allow create: if isSignedIn() && isValidId(confessionId) &&
+        incoming().keys().hasAll(['text', 'author', 'date', 'likes', 'createdAt']) &&
+        incoming().text is string && incoming().text.size() <= 500 &&
+        incoming().author is string && incoming().author.size() <= 50 &&
+        incoming().likes == 0 &&
+        incoming().createdAt == request.time;
+      allow update: if isSignedIn() && isValidId(confessionId) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['likes']) &&
+        incoming().likes == existing().likes + 1;
     }
 
-    // --- Stats Rules ---
-    match /stats/{statId} {
+    // Stats rules
+    match /stats/{statsId} {
       allow read: if true;
-      allow write: if true; // In a real production app, this would be updated via Cloud Functions or restricted, 
-                           // but for this demo/remix, we allow client-side updates for simplicity.
+      allow write: if isSignedIn() && isValidId(statsId) && statsId == 'global';
     }
 
-    // --- User Specific Responses ---
-    match /user_responses/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // --- User Profiles (Avatars & Names) ---
+    // User profile rules
     match /users/{userId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if isOwner(userId) && isValidId(userId);
     }
 
-    // --- Connection Test ---
+    // Individual survey responses
+    match /user_responses/{userId} {
+      allow read, write: if isOwner(userId) && isValidId(userId);
+    }
+
+    // Diagnostic rules
     match /test/connection {
       allow read: if true;
     }

@@ -73,6 +73,10 @@
     "users": {
       "schema": "userProfile",
       "description": "User profile documents keyed by UID."
+    },
+    "user_responses": {
+      "schema": "surveyStats",
+      "description": "Individual survey responses keyed by UID."
     }
   }
 }

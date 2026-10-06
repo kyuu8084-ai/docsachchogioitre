@@ -89,12 +89,12 @@ export default function ReadingHabitsPage({ onNavigate }: ReadingHabitsPageProps
       ]
     },
     {
-      question: 'Không gian đọc lý tưởng của bạn là gì?',
+      question: 'Bạn thích nhịp độ của một cuốn sách như thế nào?',
       options: [
-        { label: 'Bàn làm việc gọn gàng với sổ ghi chép', type: 'practical' },
-        { label: 'Góc thư viện yên tĩnh tuyệt đối', type: 'scholar' },
-        { label: 'Cuộn mình trong chăn hoặc bên cửa sổ lúc trời mưa', type: 'escapist' },
-        { label: 'Quán cà phê đông đúc hoặc trên xe buýt', type: 'butterfly' }
+        { label: 'Chậm rãi, giàu tính triết lý và suy ngẫm', type: 'scholar' },
+        { label: 'Nhanh, dồn dập với nhiều tình tiết bất ngờ', type: 'escapist' },
+        { label: 'Rõ ràng, trực diện và đi thẳng vào vấn đề', type: 'practical' },
+        { label: 'Nhẹ nhàng, dễ đọc và mang tính giải trí cao', type: 'butterfly' }
       ]
     },
     {
