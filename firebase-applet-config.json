@@ -3,7 +3,7 @@
   "appId": "1:760073324008:web:3d4aa7dc361902212dd05d",
   "apiKey": "AIzaSyB2TTiXX6J-oWbGjm9-Korr7xHVK9T8V9I",
   "authDomain": "sachhaychonguoitre.firebaseapp.com",
-  "firestoreDatabaseId": "",
+  "firestoreDatabaseId": "default",
   "storageBucket": "sachhaychonguoitre.firebasestorage.app",
   "messagingSenderId": "760073324008",
   "measurementId": "G-9WY3RES3R4",
