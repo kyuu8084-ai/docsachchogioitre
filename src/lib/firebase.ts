@@ -6,10 +6,10 @@ import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 
-// Use initializeFirestore to enable long polling and specify the correct database ID
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-}, firebaseConfig.firestoreDatabaseId);
+// Use initializeFirestore to enable long polling and specify the correct database ID if provided
+export const db = firebaseConfig.firestoreDatabaseId 
+  ? initializeFirestore(app, { experimentalForceLongPolling: true }, firebaseConfig.firestoreDatabaseId)
+  : initializeFirestore(app, { experimentalForceLongPolling: true });
 
 export const auth = getAuth(app);
 
