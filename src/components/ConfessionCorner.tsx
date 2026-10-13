@@ -25,10 +25,34 @@ interface Confession {
   likes: number;
 }
 
+const DEFAULT_CONFESSIONS: Confession[] = [
+  {
+    id: "1",
+    text: "Đọc sách không phải để trở thành giáo sư, mà để thấy mình bớt cô độc giữa thế giới này.",
+    author: "Bạn nhỏ ẩn danh",
+    date: "2026-10-01",
+    likes: 12
+  },
+  {
+    id: "2",
+    text: "Mỗi lần ngửi mùi sách mới, mình lại thấy một thế giới mới đang mở ra. Đó là cảm giác gây nghiện nhất.",
+    author: "Mọt sách Hà Nội",
+    date: "2026-10-02",
+    likes: 19
+  },
+  {
+    id: "3",
+    text: "Những ngày chênh vênh nhất của tuổi 20, một cuốn sách hay có thể cứu rỗi cả một tâm hồn đang lạc lối.",
+    author: "Độc giả Sài Gòn",
+    date: "2026-10-03",
+    likes: 27
+  }
+];
+
 const fullTitle = 'Góc Tâm Sự Bạn Đọc';
 
 export default function ConfessionCorner() {
-  const [confessions, setConfessions] = useState<Confession[]>([]);
+  const [confessions, setConfessions] = useState<Confession[]>(DEFAULT_CONFESSIONS);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newText, setNewText] = useState('');
   const [newAuthor, setNewAuthor] = useState('');
@@ -43,7 +67,9 @@ export default function ConfessionCorner() {
         id: doc.id,
         ...doc.data()
       })) as Confession[];
-      setConfessions(docs);
+      if (docs && docs.length > 0) {
+        setConfessions(docs);
+      }
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'confessions');
     });

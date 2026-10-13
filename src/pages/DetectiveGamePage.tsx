@@ -29,6 +29,7 @@ import { PageId, BookItem } from '../types';
 import { STATIC_BOOKS } from '../data/booksData';
 import { GAME_HINTS, GameHint } from '../data/gameData';
 import VintageSeparator from '../components/VintageSeparator';
+import SurveyDeductionBanner from '../components/SurveyDeductionBanner';
 
 interface DetectiveGamePageProps {
   onNavigate: (page: PageId) => void;
@@ -240,13 +241,32 @@ export default function DetectiveGamePage({ onNavigate, onImmersiveChange }: Det
               exit={{ opacity: 0 }}
               className="flex flex-col h-full justify-between"
             >
-              <div className="max-w-3xl">
+              <div className="max-w-4xl">
                 <p className="text-xs sm:text-sm text-[#D9A441] font-bold uppercase tracking-[0.2em] mb-4 sm:mb-6 animate-fadeSlideUp" style={{ animationDelay: '0.2s' }}>
-                  Vụ Án Thư Viện · Khám Phá Văn Học
+                  Vụ Án Thư Viện · Khám Phá Văn Học Bằng Trò Chơi Hóa
                 </p>
-                <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-medium leading-[1.1] tracking-tight text-white animate-fadeSlideUp" style={{ animationDelay: '0.4s' }}>
+                <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-medium leading-[1.1] tracking-tight text-white animate-fadeSlideUp mb-6" style={{ animationDelay: '0.4s' }}>
                   Giải mã bí ẩn, <br/> lật mở tri thức, <br/> từng trang sách một.
                 </h1>
+
+                {/* BANNER TỪ KẾT QUẢ KHẢO SÁT SUY RA TÍNH NĂNG THÁM TỬ THƯ VIỆN */}
+                <div className="my-6">
+                  <SurveyDeductionBanner
+                    topicNumber="TƯƠNG TÁC GAMIFICATION"
+                    surveyQuestionSource="Biểu đồ 05 (Điều cản đọc nhiều hơn) & Biểu đồ 06 (Điều giúp đọc nhiều hơn)"
+                    surveyMetricHighlight="39,1% rào cản từ màn hình số · 17,6% thích sách ngắn dễ tiếp cận"
+                    surveyQuote="39,1% bạn trẻ bị phân tâm bởi điện thoại và thích xem video ngắn hơn đọc chữ. Việc đọc truyền thống đôi khi bị coi là dài dòng, thiếu yếu tố kích thích tức thì (17,6% mong muốn sách ngắn, dễ đọc hơn). Vấn đề là làm sao khơi gợi lại sự tò mò nguyên bản."
+                    deducedComponentTitle="Mini-game Thám Tử Thư Viện (Gamification Giải Đố Sách)"
+                    deducedComponentDescription="Ứng dụng cơ chế trò chơi hóa (Gamification) để biến việc tìm hiểu sách thành hành trình phá án 5 manh mối kịch tính. Người chơi vừa được giải trí, vừa vô thức tiếp nạp thông điệp, trích dẫn và bối cảnh của các kiệt tác văn học."
+                    solutionTags={[
+                      'Gamification giải đố',
+                      '5 manh mối tương tác',
+                      'Kích hoạt sự tò mò',
+                      'Vượt qua sức ỳ đọc sách',
+                    ]}
+                    variant="glass"
+                  />
+                </div>
               </div>
 
               <div className="max-w-xl mb-12">
@@ -257,7 +277,7 @@ export default function DetectiveGamePage({ onNavigate, onImmersiveChange }: Det
                 </p>
                 <button
                   onClick={startCase}
-                  className="rounded-lg bg-white px-5 py-2.5 sm:px-6 sm:py-3 text-sm font-medium text-black hover:scale-105 transition-transform inline-flex items-center gap-2 animate-fadeSlideUp"
+                  className="rounded-lg bg-white px-5 py-2.5 sm:px-6 sm:py-3 text-sm font-medium text-black hover:scale-105 transition-transform inline-flex items-center gap-2 animate-fadeSlideUp cursor-pointer shadow-lg"
                   style={{ animationDelay: '0.9s' }}
                 >
                   <span>{isCorrect ? "Xem hồ sơ đã giải" : "Mở hồ sơ vụ án"}</span>

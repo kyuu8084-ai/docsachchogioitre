@@ -27,6 +27,7 @@ import {
   Award
 } from 'lucide-react';
 import VintageSeparator from '../components/VintageSeparator';
+import SurveyDeductionBanner from '../components/SurveyDeductionBanner';
 import { GenreItem, PageId } from '../types';
 import GenreSurveyChart from '../components/GenreSurveyChart';
 
@@ -509,7 +510,7 @@ export default function GenresPage({ onNavigate }: GenresPageProps) {
               <div className="space-y-4 max-w-3xl">
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase text-white bg-black/40 backdrop-blur-md border border-white/25 shadow-md">
                   <Flame size={14} className="text-amber-400 shrink-0" />
-                  <span className="font-sans">CHUYÊN ĐỀ 02 · GU ĐỌC ĐA SẮC MÀU GIỚI TRẺ</span>
+                  <span className="font-sans">CHUYÊN ĐỀ 02 · THỂ LOẠI SÁCH & GU ĐỌC CỦA GIỚI TRẺ</span>
                 </div>
                 <h1 className="text-3xl sm:text-5xl xl:text-6xl font-medium leading-[1.15] drop-shadow-2xl text-white font-playfair">
                   Gu đọc đa sắc màu <br />
@@ -526,7 +527,7 @@ export default function GenresPage({ onNavigate }: GenresPageProps) {
                   </span>
                 </h1>
                 <p className="text-sm sm:text-base text-white/90 max-w-2xl font-lora leading-relaxed drop-shadow-md">
-                  Từ những trang sách chữa lành xoa dịu tâm hồn, tiểu thuyết lôi cuốn đến dòng sách tài chính thực chiến kiến tạo tương lai.
+                  Được xây dựng từ lựa chọn thực tế của 100 bạn trẻ trong khảo sát: Gu đọc phân bố đều (9,1% - 17,2%), dẫn đầu là Manga / Light novel (17,2%), Tiểu thuyết văn học (15,5%) và Tâm lý học (14,5%). Nhóm giải trí chiếm 57%, nhóm tri thức kỹ năng chiếm 43%.
                 </p>
               </div>
 
@@ -538,7 +539,7 @@ export default function GenresPage({ onNavigate }: GenresPageProps) {
                   }}
                   className="bg-white text-black text-sm font-semibold px-6 py-3.5 rounded-2xl hover:bg-neutral-100 transition-all flex items-center gap-2 cursor-pointer shadow-xl hover:scale-105 active:scale-95 duration-200"
                 >
-                  <span>Khám phá 6 thể loại</span>
+                  <span>Khám phá 9 thể loại</span>
                   <ChevronDown size={16} />
                 </button>
               </div>
@@ -551,7 +552,7 @@ export default function GenresPage({ onNavigate }: GenresPageProps) {
       <section id="genres-library" className="py-16 sm:py-24 bg-[#FAF7F0] border-t border-[#D6CDBF] scroll-mt-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-12">
+          <div className="text-center max-w-3xl mx-auto mb-8">
             <span className="text-xs font-bold uppercase tracking-[0.25em] text-[#B56D4F] block mb-2 font-lora">
               Bản Đồ Thể Loại Sách
             </span>
@@ -562,6 +563,25 @@ export default function GenresPage({ onNavigate }: GenresPageProps) {
               Dòng sách bạn chọn kể câu chuyện về con người bạn muốn trở thành.
             </p>
             <VintageSeparator className="max-w-xs mx-auto mt-6" />
+          </div>
+
+          {/* BANNER TỪ KẾT QUẢ KHẢO SÁT SUY RA THÀNH PHẦN CHUYÊN ĐỀ 02 */}
+          <div className="mb-10">
+            <SurveyDeductionBanner
+              topicNumber="CHUYÊN ĐỀ 02"
+              surveyQuestionSource="Biểu đồ 02 (Thể loại quan tâm) & Biểu đồ 03 (Điều khiến chọn sách)"
+              surveyMetricHighlight="Manga 17,2% · Tiểu thuyết 15,5% · Tâm lý 14,5% · 57% giải trí vs 43% tri thức"
+              surveyQuote="Phân bố thể loại khá đều, từ 9,1% đến 17,2%, không thể loại nào áp đảo hoàn toàn. Manga, light novel, truyện tranh đứng đầu (17,2%), tiếp theo là tiểu thuyết văn học (15,5%) và tâm lý học (14,5%). Nhóm giải trí chiếm khoảng 57% tổng lượt chọn, nhóm kiến thức và kỹ năng chiếm khoảng 43%."
+              deducedComponentTitle="Bản đồ 9 thể loại chuyên sâu & Công cụ gợi ý theo tâm trạng (Mood Picker)"
+              deducedComponentDescription="Từ sự đa dạng lành mạnh trong gu đọc của người trẻ, chuyên đề này kiến tạo không gian đọc không phán xét: Tôn vinh cả văn học giải trí lẫn sách chuyên sâu, tích hợp bộ chọn sách theo tâm trạng tức thì và thử thách hành động cụ thể cho từng thể loại."
+              solutionTags={[
+                'Khám phá 9 thể loại',
+                'Mood Picker theo tâm trạng',
+                'Thử thách từng dòng sách',
+                'Cân bằng giải trí & tri thức',
+              ]}
+              variant="light"
+            />
           </div>
 
           {/* NEW: Mood Picker Tool */}

@@ -34,6 +34,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import VintageSeparator from '../components/VintageSeparator';
 import ReadingJournal from '../components/ReadingJournal';
+import SurveyDeductionBanner from '../components/SurveyDeductionBanner';
 import { PageId } from '../types';
 
 interface ReadingHabitsPageProps {
@@ -197,18 +198,38 @@ export default function ReadingHabitsPage({ onNavigate }: ReadingHabitsPageProps
       <div className="relative z-10 w-full">
         {/* Row 3.1: Header trang */}
         <section className="py-16 sm:py-24 text-center px-4 sm:px-6 lg:px-8 border-b border-white/10 bg-black/40 backdrop-blur-sm">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             <span
-              className="text-xs uppercase tracking-[0.25em] text-[#EBE5D9] font-[600] block mb-3 font-mono"
+              className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs uppercase tracking-[0.2em] text-[#EBE5D9] bg-black/40 border border-white/20 backdrop-blur-md mb-3 font-sans font-semibold"
             >
-              CHUYÊN ĐỀ 01 · THÓI QUEN ĐỌC THỜI KỶ NGUYÊN SỐ
+              <span>CHUYÊN ĐỀ 01 · THÓI QUEN & HÌNH THỨC ĐỌC SÁCH</span>
             </span>
             <h1 className="font-playfair text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white mb-2 drop-shadow-sm">
               Nâng tầm văn hóa đọc cá nhân
             </h1>
             <VintageSeparator color="#EBE5D9" width="w-28" />
+
+            {/* BANNER TỪ KẾT QUẢ KHẢO SÁT SUY RA THÀNH PHẦN CHUYÊN ĐỀ 01 */}
+            <div className="mt-8 mb-6">
+              <SurveyDeductionBanner
+                topicNumber="CHUYÊN ĐỀ 01"
+                surveyQuestionSource="Biểu đồ 01 (Hình thức đọc) & Biểu đồ 05 (Điều cản đọc nhiều hơn)"
+                surveyMetricHighlight="39,1% rào cản từ thiết bị số · 32,3% online vs 31,2% sách giấy"
+                surveyQuote="Truyện online (32,3%) và sách giấy (31,2%) gần như ngang nhau (chỉ chênh 1,1%), cho thấy giới trẻ không bỏ sách giấy mà đọc song song nhiều hình thức. Ngược lại, dễ bị phân tâm bởi điện thoại là rào cản lớn nhất (24,1%), kết hợp với thích xem video hơn (15,0%) tạo thành nhóm lý do thiết bị số chiếm tới 39,1%, kế tiếp là thiếu thời gian (20,4%)."
+                deducedComponentTitle="Rèn luyện thói quen đọc vi mô & vượt qua bẫy xao nhãng số"
+                deducedComponentDescription="Để phá vỡ rào cản xao nhãng và áp lực thời gian, chuyên đề này kiến tạo: Bài trắc nghiệm 4 kiểu độc giả cá nhân hóa, công cụ tính tiềm năng đọc (Reading Calculator), kỹ thuật đọc vi mô 15–20 phút mỗi ngày và quy tắc 2 phút khởi động."
+                solutionTags={[
+                  'Trắc nghiệm 4 kiểu độc giả',
+                  'Đọc vi mô 15–20 phút',
+                  'Quy tắc 2 phút',
+                  'Công cụ tính trang đọc',
+                ]}
+                variant="glass"
+              />
+            </div>
+
             <p className="font-lora text-base sm:text-lg text-white/90 leading-relaxed max-w-3xl mx-auto mt-4 drop-shadow-xs">
-              Đọc sách không chỉ là tiếp nhận thông tin, mà là một nghệ thuật rèn luyện tâm trí. Khám phá các phương pháp khoa học và xây dựng một thói quen bền vững giữa kỷ nguyên số ngập tràn xao nhãng.
+              Lời giải cho <strong>24,1% bạn trẻ bị điện thoại làm xao nhãng</strong> và <strong>20,4% cảm thấy thiếu thời gian</strong> trong khảo sát: Cùng khám phá phương pháp đọc vi mô 15–20 phút, quy tắc 2 phút khởi động và trắc nghiệm phong cách độc giả để xây dựng kỷ luật đọc sâu bền vững.
             </p>
           </div>
         </section>

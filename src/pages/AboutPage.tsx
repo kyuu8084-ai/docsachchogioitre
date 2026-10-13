@@ -2,8 +2,6 @@ import { motion } from 'framer-motion';
 import { 
   BookOpen, 
   Mail, 
-  Instagram, 
-  Facebook, 
   Sparkles, 
   Feather, 
   Users, 
@@ -18,7 +16,8 @@ import {
   Flame,
   Award
 } from 'lucide-react';
-import AuraVideoBackground from '../components/AuraVideoBackground';
+import SellixCosmicBackground from '../components/SellixCosmicBackground';
+import TeamMembersSection from '../components/TeamMembersSection';
 import { PageId } from '../types';
 
 interface AboutPageProps {
@@ -42,48 +41,48 @@ const THEME_TOPICS: ThemeTopicItem[] = [
   {
     id: 'habits',
     number: '01',
-    categoryTag: 'CHUYÊN ĐỀ 01 · THỜI LƯỢNG & PHƯƠNG THỨC',
+    categoryTag: 'CHUYÊN ĐỀ 01 · GIẢI PHÁP THỜI LƯỢNG & PHƯƠNG THỨC',
     title: 'Thói quen đọc thời kỷ nguyên số',
-    tagline: 'Sách giấy vs Ebook & Phương pháp duy trì 15–20 phút mỗi ngày',
-    description: 'Phân tích khoa học sự chuyển dịch từ trang giấy in truyền thống sang các thiết bị đọc điện tử và audiobooks. Hướng dẫn độc giả trẻ vượt qua sự phân tán từ thông báo số để thiết lập kỷ luật đọc sâu bền bỉ.',
-    keyMetric: '62% ưa thích sách giấy kết hợp tiện ích số',
-    highlights: ['Trải nghiệm đa giác quan của sách giấy', 'Linh hoạt trên e-reader & audiobooks', 'Bộ tính toán tiềm năng đọc cá nhân'],
+    tagline: 'Lời giải cho 39,1% rào cản thiết bị số & 20,4% thiếu thời gian',
+    description: 'Từ kết quả khảo sát câu hỏi số 1 & 5, chuyên đề xây dựng phương pháp đọc vi mô 15–20 phút mỗi ngày, quy tắc 2 phút và bộ tính toán tiềm năng đọc giúp người trẻ vượt qua bẫy dopamine từ màn hình thông minh.',
+    keyMetric: 'Giải pháp cho 39,1% bị xao nhãng số',
+    highlights: ['Phương pháp đọc vi mô 15–20 phút', 'Quy tắc 2 phút vượt qua lười biếng', 'Trắc nghiệm 4 kiểu độc giả cá nhân'],
     pageId: 'reading-habits',
     icon: Activity,
   },
   {
     id: 'genres',
     number: '02',
-    categoryTag: 'CHUYÊN ĐỀ 02 · XU HƯỚNG & TÂM LÝ',
+    categoryTag: 'CHUYÊN ĐỀ 02 · GIẢI PHÁP GU ĐỌC & TÂM LÝ',
     title: 'Bản đồ gu đọc đa sắc màu',
-    tagline: '6 dòng sách thịnh hành phản ánh thế giới quan thế hệ mới',
-    description: 'Khám phá lý do vì sao dòng sách chữa lành tâm hồn, tiểu thuyết văn học, self-help thực chiến, truyện tranh manga, kinh tế tài chính và lịch sử tri thức liên tục dẫn đầu bảng xếp hạng quan tâm của giới trẻ.',
-    keyMetric: 'Top 6 thể loại sách dẫn đầu xu hướng',
-    highlights: ['Sách chữa lành giải tỏa áp lực FOMO', 'Tài chính cá nhân hướng tới tự chủ sớm', 'Manga & Graphic Novels giàu nghệ thuật'],
+    tagline: 'Phản ánh trực tiếp thị hiếu từ 100 phiếu khảo sát thực tế',
+    description: 'Bắt nhịp từ câu hỏi số 2 trong khảo sát: Giới trẻ đọc đa dạng, dẫn đầu là Manga / Light novel (17,2%), Tiểu thuyết văn học (15,5%) và Tâm lý học (14,5%). Chuyên đề đi sâu giải mã tâm lý và gợi ý tác phẩm đúng gu từng tâm trạng.',
+    keyMetric: 'Top Manga, Văn học & Tâm lý học',
+    highlights: ['Giải mã tâm lý độc giả trẻ', 'Phân tích sâu Manga, Văn học & Tâm lý', 'Bộ lọc sách theo cảm xúc tâm trạng'],
     pageId: 'genres',
     icon: Layers,
   },
   {
     id: 'library',
     number: '03',
-    categoryTag: 'CHUYÊN ĐỀ 03 · KHO TÀNG TUYỂN CHỌN',
+    categoryTag: 'CHUYÊN ĐỀ 03 · GIẢI PHÁP NGUỒN SÁCH MIỄN PHÍ',
     title: 'Thư viện sách & Tri thức tinh hoa',
-    tagline: '40 kiệt tác kinh điển kèm tóm tắt và link đọc trực tuyến',
-    description: 'Tủ sách số được tuyển chọn công phu từ hài hước châm biếm, kinh dị kịch tính đến giáo dục và truyện tranh. Mỗi tác phẩm đều đi kèm thông điệp cốt lõi, trích dẫn truyền cảm hứng và nguồn đọc trực tuyến.',
-    keyMetric: '40 tác phẩm chọn lọc toàn diện',
-    highlights: ['Phân loại 4 thể loại rõ ràng', 'Trích dẫn & bài học thực tế cho từng cuốn', 'Đọc miễn phí trên isach.info & ebook'],
+    tagline: 'Phục vụ 76,6% bạn đọc tìm kiếm nguồn sách miễn phí chất lượng',
+    description: 'Đáp ứng nhu cầu cấp thiết từ câu hỏi số 4 & 6 trong khảo sát: Tuyển chọn 40 kiệt tác kinh điển đa thể loại, tóm tắt thông điệp giáo dục, trích dẫn truyền cảm hứng và tích hợp sẵn link đọc trực tuyến hoàn toàn miễn phí.',
+    keyMetric: '40 tác phẩm kèm link đọc online miễn phí',
+    highlights: ['Phân loại 4 thể loại rõ ràng', 'Thông điệp & bài học cốt lõi từng cuốn', 'Đọc online miễn phí, không rào cản chi phí'],
     pageId: 'library',
     icon: BookOpen,
   },
   {
     id: 'survey',
     number: '04',
-    categoryTag: 'CHUYÊN ĐỀ 04 · DỮ LIỆU CỘNG ĐỒNG',
-    title: 'Khảo sát & Tiếng nói bạn đọc trẻ',
-    tagline: 'Lắng nghe hành vi thực tế & đồng bộ trực tiếp đa thiết bị',
-    description: 'Nền tảng tương tác 2 phút cho phép bạn đọc chia sẻ thói quen cá nhân. Dữ liệu được lưu trữ máy chủ & đồng bộ theo thời gian thực trên mọi thiết bị với biểu đồ tròn và biểu đồ thanh phần trăm sinh động.',
-    keyMetric: 'Đồng bộ máy chủ & biểu đồ tròn trực quan',
-    highlights: ['Khảo sát 9 câu hỏi trực quan', 'Biểu đồ tròn SVG & biểu đồ thanh', 'Lưu trữ máy chủ đồng bộ đa thiết bị'],
+    categoryTag: 'CHUYÊN ĐỀ 04 · KHỞI NGUỒN & DỮ LIỆU GỐC',
+    title: 'Kết quả khảo sát bạn đọc trẻ',
+    tagline: 'Video tổng hợp & bảng phân tích 11 câu hỏi khởi sinh website',
+    description: 'Nền tảng khởi nguồn của toàn bộ dự án Đọc & Trẻ: Video báo cáo tổng kết, bảng trực quan hóa 11 câu hỏi khảo sát thực tế và liên kết đến biểu mẫu câu hỏi thu thập dữ liệu ban đầu từ 100 bạn trẻ.',
+    keyMetric: '100 phiếu khảo sát & Video báo cáo',
+    highlights: ['Video kết quả khảo sát từ Google Drive', 'Biểu đồ trực quan 11 câu hỏi thực tế', 'Link biểu mẫu câu hỏi khảo sát gốc'],
     pageId: 'survey',
     icon: CheckCircle2,
   },
@@ -91,39 +90,39 @@ const THEME_TOPICS: ThemeTopicItem[] = [
 
 export default function AboutPage({ onNavigate }: AboutPageProps) {
   return (
-    <AuraVideoBackground className="min-h-screen">
+    <SellixCosmicBackground className="min-h-screen font-pjs">
       {/* ========================================================================= */}
-      {/* SECTION 1: AURA HERO HEADER (Refined Typography & Spacing)               */}
+      {/* SECTION 1: COSMIC HERO HEADER (Sellix Video Background & Dot-Matrix Earth) */}
       {/* ========================================================================= */}
-      <section className="relative py-24 sm:py-32 md:py-36 px-4 sm:px-6 lg:px-8 border-b border-white/10 text-center">
+      <section className="relative min-h-[85vh] flex flex-col justify-center items-center py-20 px-4 sm:px-6 lg:px-8 border-b border-white/10 text-center">
         <div className="max-w-4xl mx-auto flex flex-col items-center">
           {/* Hero Kicker Badge */}
           <motion.div
             initial={{ opacity: 0, y: -16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
-            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-[11px] font-semibold tracking-[0.25em] uppercase text-[#c2ba9b] bg-black/60 border border-[#c2ba9b]/40 backdrop-blur-md mb-6 shadow-sm"
+            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-[11px] font-semibold tracking-[0.25em] uppercase text-[#ededed] bg-[#181818]/85 border border-white/15 backdrop-blur-md mb-6 shadow-sm"
           >
-            <Sparkles size={13} className="text-[#c2ba9b]" />
+            <Sparkles size={13} className="text-[#a855f7]" />
             <span>Chuyên đề 05 · Về chúng mình & Đội ngũ Đọc & Trẻ</span>
           </motion.div>
 
-          {/* Main Hero Heading: Playfair Display, tracking tight, pure off-white #fdfbf6 */}
+          {/* Main Hero Heading: Plus Jakarta Sans / Display */}
           <motion.h1
             initial={{ opacity: 0, scale: 0.96, filter: 'blur(8px)' }}
             animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
             transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
-            className="font-playfair text-4xl sm:text-6xl lg:text-[68px] font-medium tracking-tight text-[#fdfbf6] leading-[1.1] mb-6 drop-shadow-xl"
+            className="text-4xl sm:text-6xl lg:text-[72px] font-extrabold tracking-tight text-white leading-[1.08] mb-6 drop-shadow-2xl"
           >
             Về dự án Đọc & Trẻ
           </motion.h1>
 
-          {/* Accent Gold Divider Line */}
+          {/* Accent Glow Line */}
           <motion.div
             initial={{ scaleX: 0, opacity: 0 }}
             animate={{ scaleX: 1, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="w-24 h-[2px] bg-[#c2ba9b] mb-6 shadow-[0_0_12px_rgba(194,186,155,0.4)]"
+            className="w-24 h-[2px] bg-gradient-to-r from-purple-500 via-white to-purple-500 mb-6 shadow-[0_0_16px_rgba(168,85,247,0.7)]"
           />
 
           {/* Hero Paragraph with High Visibility and Crisp Contrast */}
@@ -131,10 +130,39 @@ export default function AboutPage({ onNavigate }: AboutPageProps) {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.25 }}
-            className="text-base sm:text-lg md:text-[19px] font-light font-sans text-white/90 leading-relaxed max-w-2xl mx-auto drop-shadow-md"
+            className="text-base sm:text-lg md:text-[20px] font-light text-[#ededed] leading-relaxed max-w-2xl mx-auto drop-shadow-md mb-6"
           >
             Khởi nguồn từ niềm tin rằng: Dù công nghệ biến chuyển nhanh đến đâu, việc đọc sâu vẫn là chiếc mỏ neo vững chãi nhất cho tâm hồn người trẻ.
           </motion.p>
+
+          {/* Quick Nav Button to Team Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 0.35 }}
+            className="mt-6 flex flex-wrap items-center justify-center gap-3.5"
+          >
+            <button
+              onClick={() => {
+                const el = document.getElementById('team-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-6 py-3 rounded-full bg-[#fdfdfd] hover:bg-white active:scale-95 text-[#050505] text-xs font-semibold tracking-wider transition-all flex items-center gap-2 shadow-[0_0_25px_rgba(255,255,255,0.25)] cursor-pointer"
+            >
+              <Users size={15} />
+              <span>Giới thiệu thành viên nhóm</span>
+              <svg className="w-3 h-2.5 ml-0.5" viewBox="0 0 12 10" fill="none" aria-hidden="true">
+                <path d="M0.8 5h10M7.1 1.4 10.9 5l-3.8 3.6" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            <button
+              onClick={() => onNavigate('survey')}
+              className="px-6 py-3 rounded-full bg-[#181818]/90 hover:bg-[#232323] active:scale-95 text-[#ededed] hover:text-white text-xs font-semibold border border-white/15 transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <CheckCircle2 size={15} className="text-purple-400" />
+              <span>Xem kết quả khảo sát</span>
+            </button>
+          </motion.div>
         </div>
       </section>
 
@@ -162,15 +190,15 @@ export default function AboutPage({ onNavigate }: AboutPageProps) {
             {/* Văn bản được đóng khung thẻ kính mờ cao cấp với độ nét tối đa */}
             <div className="bg-black/40 backdrop-blur-xl p-6 sm:p-8 rounded-3xl border border-white/20 space-y-4 shadow-xl">
               <p className="text-sm sm:text-base text-white/95 font-light leading-relaxed">
-                <strong className="text-white font-medium">Đọc & Trẻ</strong> ra đời như một nỗ lực nhằm gìn giữ giá trị của sự tập trung. Chúng mình là những người trẻ say mê cảm giác lật từng trang giấy in, nơi mỗi từ ngữ đều mang sức nặng của tri thức và sự chiêm nghiệm.
+                Website <strong className="text-white font-medium">Đọc & Trẻ</strong> được thực hiện và ra đời ngay sau khi nhóm hoàn thành cuộc khảo sát thực tế với 100 bạn đọc trẻ Việt Nam về thói quen đọc sách và những rào cản trong thời đại số.
               </p>
 
               <p className="text-sm sm:text-base text-white/90 font-light leading-relaxed">
-                Chúng mình nhận thấy nhiều bạn trẻ đang loay hoay trước áp lực số và bẫy dopamine từ các thiết bị thông minh. Sách chính là chiếc mỏ neo giúp bạn định vị lại bản thân, xoa dịu tâm hồn và mở ra những chân trời tư duy độc lập.
+                Khi phân tích 100 phiếu phản hồi, chúng mình nhận thấy một thực tế sâu sắc: <strong>66%</strong> bạn trẻ bị điện thoại và mạng xã hội làm xao nhãng, <strong>56%</strong> cảm thấy thiếu thời gian, <strong>75%</strong> tìm kiếm nguồn đọc miễn phí và tới <strong>70%</strong> mong muốn có người gợi ý đúng gu. Thay vì để khảo sát chỉ dừng lại ở một bài thuyết trình trên giấy, chúng mình đã quyết định xây dựng toàn bộ website này như một nền tảng giải pháp số hóa sống động.
               </p>
 
               <p className="text-sm sm:text-base text-white/90 font-light leading-relaxed">
-                Tại đây, chúng mình tôn trọng mọi hình thức tiếp nhận tri thức. Dù bạn chọn sách giấy hay điện tử, triết học hay tiểu thuyết, điều quan trọng nhất là bạn dám dành thời gian để đối thoại với chính mình qua từng trang sách.
+                Mỗi chuyên đề trên trang web—từ phương pháp đọc vi mô 15–20 phút, bản đồ 6 dòng sách hot, tủ sách 40 tác phẩm kinh điển đọc miễn phí cho đến game Thám tử thư viện—đều được kiến tạo để trả lời trực tiếp từng câu hỏi và giải tỏa từng trăn trở của bạn đọc trẻ.
               </p>
             </div>
 
@@ -189,53 +217,6 @@ export default function AboutPage({ onNavigate }: AboutPageProps) {
                 <p className="text-xs text-white/80 leading-relaxed font-sans">Lan tỏa niềm vui đọc từng ngày với phương pháp 15–20 phút bền bỉ.</p>
               </div>
             </div>
-
-            {/* Thông tin liên hệ */}
-            <div className="pt-6 border-t border-white/10">
-              <h4 className="font-playfair text-xl font-medium text-[#fdfbf6] mb-3">
-                Ghé thăm & Trò chuyện cùng chúng mình:
-              </h4>
-              <div className="space-y-3 text-xs sm:text-sm text-white/85">
-                <div className="flex items-center gap-3">
-                  <Mail size={16} className="text-[#c2ba9b] shrink-0" />
-                  <span>Email trao đổi & gửi bài viết: </span>
-                  <a href="mailto:docvatre@example.com" className="font-semibold text-[#c2ba9b] hover:text-[#d4ccad] transition-colors underline">
-                    docvatre@example.com
-                  </a>
-                </div>
-              </div>
-
-              {/* Icon MXH */}
-              <div className="mt-6 flex items-center gap-3">
-                <span className="text-xs uppercase tracking-wider text-white/70 font-semibold font-sans">
-                  Mạng xã hội:
-                </span>
-                <a
-                  href="#instagram"
-                  onClick={(e) => e.preventDefault()}
-                  className="w-10 h-10 rounded-full bg-white/5 border border-white/15 text-[#c2ba9b] hover:bg-[#c2ba9b] hover:text-black hover:border-[#c2ba9b] transition-all flex items-center justify-center cursor-pointer shadow-sm"
-                  title="Instagram Đọc & Trẻ"
-                >
-                  <Instagram size={18} />
-                </a>
-                <a
-                  href="#facebook"
-                  onClick={(e) => e.preventDefault()}
-                  className="w-10 h-10 rounded-full bg-white/5 border border-white/15 text-[#c2ba9b] hover:bg-[#c2ba9b] hover:text-black hover:border-[#c2ba9b] transition-all flex items-center justify-center cursor-pointer shadow-sm"
-                  title="Facebook Đọc & Trẻ"
-                >
-                  <Facebook size={18} />
-                </a>
-                <a
-                  href="#tiktok"
-                  onClick={(e) => e.preventDefault()}
-                  className="w-10 h-10 rounded-full bg-white/5 border border-white/15 text-[#c2ba9b] hover:bg-[#c2ba9b] hover:text-black hover:border-[#c2ba9b] transition-all flex items-center justify-center font-bold text-xs cursor-pointer shadow-sm font-sans"
-                  title="TikTok Đọc & Trẻ"
-                >
-                  TT
-                </a>
-              </div>
-            </div>
           </motion.div>
 
           {/* Cột Phải: Thẻ kính nghệ thuật Aura Glass Card */}
@@ -245,6 +226,7 @@ export default function AboutPage({ onNavigate }: AboutPageProps) {
             transition={{ duration: 0.8, delay: 0.35 }}
             className="lg:col-span-5 space-y-6"
           >
+
             <div className="bg-black/45 backdrop-blur-2xl p-7 sm:p-8 rounded-3xl border border-white/20 shadow-2xl relative overflow-hidden group hover:border-[#c2ba9b]/40 transition-all duration-300">
               {/* Corner Stamp */}
               <div className="flex justify-between items-start mb-6">
@@ -285,7 +267,7 @@ export default function AboutPage({ onNavigate }: AboutPageProps) {
                 onClick={() => onNavigate('survey')}
                 className="w-full py-3.5 bg-[#c2ba9b] hover:bg-[#d4ccad] active:scale-95 text-black text-xs font-bold uppercase tracking-[0.15em] rounded-full transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_30px_rgba(194,186,155,0.25)] group"
               >
-                <span>Tham gia cộng đồng khảo sát</span>
+                <span>Xem kết quả khảo sát & dữ liệu gốc</span>
                 <ArrowUpRight size={15} className="transition-transform group-hover:rotate-45" />
               </button>
             </div>
@@ -304,7 +286,12 @@ export default function AboutPage({ onNavigate }: AboutPageProps) {
       </section>
 
       {/* ========================================================================= */}
-      {/* SECTION 3: 5 CHUYÊN ĐỀ TRỌNG TÂM (Aura Refined List & Typography)         */}
+      {/* SECTION 3: GIỚI THIỆU THÀNH VIÊN NHÓM (Video, Ảnh nhóm & 5 Thành viên)    */}
+      {/* ========================================================================= */}
+      <TeamMembersSection />
+
+      {/* ========================================================================= */}
+      {/* SECTION 4: 5 CHUYÊN ĐỀ TRỌNG TÂM (Aura Refined List & Typography)         */}
       {/* ========================================================================= */}
       <section className="relative py-24 sm:py-32 border-t border-white/10 bg-black/30 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -460,6 +447,6 @@ export default function AboutPage({ onNavigate }: AboutPageProps) {
           </motion.div>
         </div>
       </section>
-    </AuraVideoBackground>
+    </SellixCosmicBackground>
   );
 }

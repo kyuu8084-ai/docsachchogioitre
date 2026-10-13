@@ -94,3 +94,17 @@ export async function appSignOut() {
   } catch (e) {}
   setStoredAuthUser(null);
 }
+
+export function loginDemoUser(displayName = 'Bạn Đọc Trẻ', email = 'bandoc@docvatre.vn'): AppAuthUser {
+  const existing = getStoredAuthUser();
+  const demoUser: AppAuthUser = {
+    uid: existing?.uid || `demo_reader_${Math.random().toString(36).substring(2, 8)}`,
+    email,
+    displayName,
+    photoURL: existing?.photoURL || null,
+    isAnonymous: false,
+    emailVerified: true,
+  };
+  setStoredAuthUser(demoUser);
+  return demoUser;
+}

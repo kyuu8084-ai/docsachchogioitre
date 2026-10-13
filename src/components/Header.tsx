@@ -6,8 +6,9 @@ import MyBookshelf, { BOOKSHELF_SYNC_EVENT } from './MyBookshelf';
 import AuthModal from './AuthModal';
 import ProfileModal from './ProfileModal';
 import { auth, db } from '../lib/firebase';
-import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { User as FirebaseUser } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { subscribeAuth, appSignOut, AppAuthUser } from '../lib/appAuth';
 
 interface HeaderProps {
   currentPage: PageId;
@@ -21,7 +22,7 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
   const [isBookshelfOpen, setIsBookshelfOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [user, setUser] = useState<AppAuthUser | FirebaseUser | null>(null);
   const [customAvatar, setCustomAvatar] = useState<string | null>(null);
   const [customName, setCustomName] = useState<string | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -40,7 +41,7 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
   useEffect(() => {
     let unsubscribeSnapshot: (() => void) | null = null;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribeAuth = subscribeAuth((currentUser) => {
       setUser(currentUser);
       
       if (unsubscribeSnapshot) {
@@ -48,18 +49,22 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
         unsubscribeSnapshot = null;
       }
 
-      if (currentUser) {
+      if (currentUser?.uid) {
         // Listen to Firestore for custom profile data
-        unsubscribeSnapshot = onSnapshot(doc(db, 'users', currentUser.uid), (docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setCustomAvatar(data.avatarBase64 || null);
-            setCustomName(data.displayName || null);
-          } else {
-            setCustomAvatar(null);
-            setCustomName(null);
-          }
-        });
+        try {
+          unsubscribeSnapshot = onSnapshot(doc(db, 'users', currentUser.uid), (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              setCustomAvatar(data.avatarBase64 || null);
+              setCustomName(data.displayName || null);
+            } else {
+              setCustomAvatar(null);
+              setCustomName(null);
+            }
+          }, (err) => {
+            console.warn("User profile onSnapshot notice:", err?.message);
+          });
+        } catch (e) {}
       } else {
         setCustomAvatar(null);
         setCustomName(null);
@@ -97,7 +102,7 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
     { id: 'genres', label: 'Thể loại sách hot' },
     { id: 'library', label: 'Thư viện sách' },
     { id: 'detective-game', label: 'Thám Tử Game' },
-    { id: 'survey', label: 'Khảo sát' },
+    { id: 'survey', label: 'Kết quả khảo sát' },
     { id: 'about', label: 'Về chúng mình' },
   ];
 
@@ -235,8 +240,9 @@ export default function Header({ currentPage, onNavigate, isHeroOverlay = false 
                         </button>
 
                         <button
-                          onClick={() => {
-                            signOut(auth);
+                          onClick={async () => {
+                            await appSignOut();
+                            setUser(null);
                             setIsUserMenuOpen(false);
                           }}
                           className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer"

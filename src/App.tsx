@@ -85,7 +85,7 @@ export default function App() {
       'reading-habits': 'Thói quen đọc sách của giới trẻ – Đọc & Trẻ',
       genres: 'Các thể loại sách được giới trẻ quan tâm – Đọc & Trẻ',
       library: 'Thư viện sách – Tuyển tập tác phẩm giới trẻ yêu thích – Đọc & Trẻ',
-      survey: 'Khảo sát thói quen đọc sách – Đọc & Trẻ',
+      survey: 'Kết quả khảo sát – Đọc & Trẻ',
       about: 'Về Đọc & Trẻ – Kết nối giới trẻ với sách',
       'detective-game': 'Trò chơi Thám Tử Thư Viện – Giải mã bí ẩn sách – Đọc & Trẻ',
       '404': '404 - Not Found',
@@ -117,7 +117,7 @@ export default function App() {
         <Header
           currentPage={currentPage}
           onNavigate={handleNavigate}
-          isHeroOverlay={currentPage === 'home' || currentPage === 'detective-game'}
+          isHeroOverlay={currentPage === 'home' || currentPage === 'detective-game' || currentPage === 'survey' || currentPage === 'about'}
         />
       )}
 
@@ -148,8 +148,8 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Footer (consistent across all pages) */}
-      {!isImmersiveMode && <Footer onNavigate={handleNavigate} />}
+      {/* Footer (consistent across every section and page) */}
+      <Footer currentPage={currentPage} onNavigate={handleNavigate} />
 
       {/* Global Utilities */}
       <BackToTop />

@@ -15,11 +15,12 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
+import { AppAuthUser, getStoredAuthUser, setStoredAuthUser } from '../lib/appAuth';
 
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
-  user: FirebaseUser;
+  user: FirebaseUser | AppAuthUser;
 }
 
 export default function ProfileModal({ isOpen, onClose, user }: ProfileModalProps) {
@@ -109,24 +110,44 @@ export default function ProfileModal({ isOpen, onClose, user }: ProfileModalProp
     setSuccess(false);
 
     try {
-      // Update standard profile (display name)
-      await updateProfile(user, {
-        displayName: displayName.trim()
-      });
+      // Update Firebase Auth if current user exists
+      if (auth.currentUser) {
+        try {
+          await updateProfile(auth.currentUser, {
+            displayName: displayName.trim()
+          });
+        } catch (authErr) {
+          console.warn("Auth updateProfile notice:", authErr);
+        }
+      }
 
-      // Save custom avatar to Firestore
-      await setDoc(doc(db, 'users', user.uid), {
-        displayName: displayName.trim(),
-        avatarBase64: avatarBase64,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
+      // Save custom avatar to Firestore if reachable
+      try {
+        await setDoc(doc(db, 'users', user.uid), {
+          displayName: displayName.trim(),
+          avatarBase64: avatarBase64,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      } catch (firestoreErr) {
+        console.warn("Firestore setDoc notice:", firestoreErr);
+      }
+
+      // Always update local stored session so changes persist immediately
+      const currentStored = getStoredAuthUser();
+      if (currentStored) {
+        setStoredAuthUser({
+          ...currentStored,
+          displayName: displayName.trim() || currentStored.displayName,
+          photoURL: avatarBase64 || currentStored.photoURL
+        });
+      }
 
       setSuccess(true);
       setTimeout(() => {
         onClose();
-      }, 1500);
+      }, 1200);
     } catch (err: any) {
-      console.error("Update profile failed:", err);
+      console.warn("Update profile notice:", err);
       setError("Cập nhật thông tin thất bại. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);

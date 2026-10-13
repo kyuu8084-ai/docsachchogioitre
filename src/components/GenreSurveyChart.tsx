@@ -30,6 +30,9 @@ export default function GenreSurveyChart() {
         setStats(docSnap.data() as SurveyStatsData);
       }
       setLoading(false);
+    }, (error) => {
+      console.warn("GenreSurveyChart snapshot notice:", error);
+      setLoading(false);
     });
     return () => unsubscribe();
   }, []);

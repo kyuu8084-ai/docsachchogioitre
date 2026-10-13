@@ -21,7 +21,7 @@ export interface SurveyStatsData {
 }
 
 export const INITIAL_SURVEY_STATS: SurveyStatsData = {
-  totalParticipants: 0,
+  totalParticipants: 100,
   ageGroup: {
     'under-18': 0,
     '18-22': 0,
@@ -42,12 +42,14 @@ export const INITIAL_SURVEY_STATS: SurveyStatsData = {
     'Tóm tắt sách qua video / podcast': 0,
   },
   favoriteGenres: {
-    'Self-help / Phát triển bản thân': 0,
-    'Chữa lành / Tâm lý': 0,
-    'Tiểu thuyết (ngôn tình, trinh thám, fantasy…)': 0,
-    'Truyện tranh / Manga / Light novel': 0,
-    'Kinh tế / Khởi nghiệp / Tài chính': 0,
-    'Lịch sử / Hồi ký / Tự truyện': 0,
+    'Manga, light novel, truyện tranh': 17.2,
+    'Tiểu thuyết văn học': 15.5,
+    'Tâm lý học': 14.5,
+    'Khoa học viễn tưởng': 13.9,
+    'Ngôn tình lãng mạn': 10.5,
+    'Self-help, phát triển bản thân': 9.8,
+    'Lịch sử, văn hóa': 9.5,
+    'Kinh tế, tài chính, kinh doanh': 9.1,
   },
   readingMotivations: {
     'Chữa lành, tìm sự cân bằng cảm xúc nội tâm': 0,

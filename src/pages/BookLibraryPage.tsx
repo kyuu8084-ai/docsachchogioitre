@@ -31,6 +31,7 @@ import { BookItem, Category, PageId } from '../types';
 import { STATIC_BOOKS } from '../data/booksData';
 import MostarParallaxBackground from '../components/MostarParallaxBackground';
 import { BOOKSHELF_SYNC_EVENT } from '../components/MyBookshelf';
+import SurveyDeductionBanner from '../components/SurveyDeductionBanner';
 
 const STORAGE_KEY = 'doc_va_tre_bookmarks';
 
@@ -226,17 +227,36 @@ export default function BookLibraryPage({ onNavigate }: BookLibraryPageProps) {
           <div className="max-w-7xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-[0.2em] text-[#fdf1e1] bg-black/40 border border-white/25 backdrop-blur-md shadow-lg mb-4">
               <BookMarked size={14} className="text-[#fdf1e1]" />
-              <span className="font-sans">CHUYÊN ĐỀ 03 · THƯ VIỆN SÁCH & TRI THỨC TUYỂN CHỌN</span>
+              <span className="font-sans">CHUYÊN ĐỀ 03 · NGUỒN SÁCH & GỢI Ý ĐÚNG GU</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span className="text-[11px] text-emerald-300 font-sans font-medium lowercase">đã xác thực nguồn đọc</span>
+              <span className="text-[11px] text-emerald-300 font-sans font-medium lowercase">phục vụ 76,6% tìm nguồn miễn phí</span>
             </div>
 
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight mb-4 text-[#fdf1e1] drop-shadow-[0_4px_16px_rgba(0,0,0,0.7)]" style={{ fontFamily: '"Ogg Medium", Georgia, serif' }}>
               Thư Viện Sách
             </h1>
 
+            {/* BANNER TỪ KẾT QUẢ KHẢO SÁT SUY RA THÀNH PHẦN CHUYÊN ĐỀ 03 */}
+            <div className="my-8">
+              <SurveyDeductionBanner
+                topicNumber="CHUYÊN ĐỀ 03"
+                surveyQuestionSource="Biểu đồ 04 (Nguồn lấy sách) & Biểu đồ 06 (Điều giúp đọc nhiều hơn)"
+                surveyMetricHighlight="76,6% nguồn miễn phí · 36,3% cần gợi ý đúng gu · 21,5% review MXH"
+                surveyQuote="Đọc miễn phí trên mạng chiếm tới 42,9%, gần gấp đôi mua online (23,4%). Khi gộp ba nguồn miễn phí (mạng, thư viện, mượn bạn bè), con số lên tới 76,6% – chỉ khoảng 23% bỏ tiền mua sách. Đồng thời, 'Có gợi ý đúng gu' đứng đầu các yếu tố giúp đọc nhiều hơn (36,3%), và việc chọn sách chịu ảnh hưởng lớn từ review TikTok, Facebook, YouTube (21,5%) cùng bìa đẹp (16,2%)."
+                deducedComponentTitle="Tủ sách 40 kiệt tác tinh tuyển kèm liên kết đọc online miễn phí 100%"
+                deducedComponentDescription="Để xóa bỏ rào cản chi phí 'sách đắt' và thỏa mãn nhu cầu tìm sách đúng gu, thư viện này chọn lọc 40 đầu sách kinh điển có bìa bắt mắt, tóm tắt bài học cốt lõi, trích dẫn truyền cảm hứng và tích hợp sẵn link đọc trực tuyến không tốn một đồng chi phí."
+                solutionTags={[
+                  '40 tác phẩm tinh tuyển',
+                  'Đọc online miễn phí 100%',
+                  'Tóm tắt bài học & chủ đề',
+                  'Lọc tức thì tên & tác giả',
+                ]}
+                variant="glass"
+              />
+            </div>
+
             <p className="max-w-2xl mx-auto text-base sm:text-lg text-[#fdf1e1] font-lora leading-relaxed mb-8 drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] font-medium">
-              Tuyển tập 40 tác phẩm kinh điển — Phân tích chi tiết <strong>Giá trị giáo dục</strong>, <strong>Chủ đề cốt lõi</strong> và các bài học thực tế dành riêng cho độc giả trẻ.
+              Lời giải cho <strong>76,6% bạn đọc tiếp cận từ các nguồn miễn phí</strong> và <strong>36,3% khao khát gợi ý đúng gu</strong>: Tuyển tập 40 kiệt tác kinh điển phân tích sâu <strong>Giá trị giáo dục</strong>, <strong>Chủ đề cốt lõi</strong> kèm link đọc trực tuyến không tốn phí.
             </p>
 
             {/* Real-time Search Bar & Filter Options */}
