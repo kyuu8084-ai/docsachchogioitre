@@ -447,7 +447,7 @@ export default function TeamMembersSection() {
                   </p>
 
                   {/* Member quote */}
-                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 italic text-xs text-white/90 font-serif leading-relaxed">
+                  <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 text-white/95 font-dancing text-[17px] sm:text-[18px] leading-relaxed tracking-wide">
                     {member.favoriteBookOrQuote}
                   </div>
                 </div>

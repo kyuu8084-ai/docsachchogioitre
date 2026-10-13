@@ -29,6 +29,10 @@
   font-family: 'Inter', sans-serif;
 }
 
+.font-dancing {
+  font-family: 'Dancing Script', cursive, sans-serif;
+}
+
 @layer base {
   :root {
     --font-playfair: 'Playfair Display', Georgia, serif;
