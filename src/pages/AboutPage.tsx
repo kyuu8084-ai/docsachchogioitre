@@ -274,7 +274,7 @@ export default function AboutPage({ onNavigate }: AboutPageProps) {
 
             {/* Thư ngỏ ký tên */}
             <div className="bg-black/60 backdrop-blur-md p-6 rounded-2xl border border-white/10 text-center">
-              <p className="text-xs sm:text-sm text-white/85 italic font-serif">
+              <p className="text-lg sm:text-xl text-white/95 font-dancing leading-relaxed tracking-wide">
                 “Chúc bạn luôn tìm thấy niềm hứng khởi mỗi khi lật mở một trang sách mới.”
               </p>
               <div className="mt-3 font-playfair font-medium text-[#c2ba9b] text-sm tracking-wide">

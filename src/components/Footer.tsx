@@ -1,4 +1,4 @@
-import { BookOpen, Instagram, Facebook, Mail, Compass, Heart } from 'lucide-react';
+import { BookOpen, Compass, Heart, ArrowRight } from 'lucide-react';
 import { PageId } from '../types';
 
 interface FooterProps {
@@ -25,12 +25,12 @@ export default function Footer({ currentPage, onNavigate }: FooterProps) {
 
   if (isCosmic) {
     return (
-      <footer className="w-full bg-black/85 backdrop-blur-2xl border-t border-white/10 text-[#ededed] font-sans relative z-20 transition-colors duration-300">
-        {/* Row 7.1: Main Footer Content (Cosmic Dark Glass Mode for About Us) */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-14">
-            {/* Col 1: Logo & Slogan */}
-            <div className="flex flex-col items-start">
+      <footer className="w-full bg-black/90 backdrop-blur-2xl border-t border-white/10 text-[#ededed] font-sans relative z-20 transition-colors duration-300">
+        {/* Main Footer Content (Cosmic Dark Glass Mode for About Us) */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-14">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-10 lg:gap-16">
+            {/* Col 1: Logo, Slogan & Project Identity */}
+            <div className="flex flex-col items-start max-w-xl">
               <button
                 onClick={() => handleNav('home')}
                 className="flex items-center gap-3 text-left group cursor-pointer"
@@ -42,16 +42,18 @@ export default function Footer({ currentPage, onNavigate }: FooterProps) {
                   Đọc & Trẻ
                 </span>
               </button>
-              <p className="mt-3 text-[15px] text-white/70 max-w-sm leading-relaxed">
+
+              <p className="mt-3.5 text-[15px] text-white/70 leading-relaxed font-light">
                 Dự án số hóa phát triển từ kết quả khảo sát 100 bạn đọc trẻ Việt Nam, kết nối giới trẻ với trang sách và đồng hành giải quyết các rào cản thời đại số.
               </p>
+
               <div className="mt-4 flex items-center gap-2 text-xs text-white/60">
-                <Compass size={14} className="text-[#c2ba9b]" />
+                <Compass size={14} className="text-[#c2ba9b] shrink-0" />
                 <span>Khởi nguồn từ khảo sát thực tế · Đồng hành cùng bạn đọc trẻ</span>
               </div>
 
               {/* Nhóm tác giả & Về chúng mình status */}
-              <div className="mt-5 pt-4 border-t border-white/10 w-full max-w-sm flex items-center justify-between text-xs text-white/60">
+              <div className="mt-5 pt-4 border-t border-white/10 w-full flex items-center justify-between text-xs text-white/60">
                 <span>Dự án bởi Nhóm An Toàn Thông Tin</span>
                 <span className="px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-[#c2ba9b]/15 text-[#c2ba9b] border border-[#c2ba9b]/30 font-sans">
                   Bạn đang ở trang này
@@ -59,95 +61,58 @@ export default function Footer({ currentPage, onNavigate }: FooterProps) {
               </div>
             </div>
 
-            {/* Col 2: Menu nhanh */}
-            <div className="flex flex-col">
-              <h4 className="font-playfair text-lg font-bold text-[#fdfbf6] mb-4">
-                Khám phá nhanh
-              </h4>
-              <ul className="space-y-2.5">
+            {/* Col 2: Menu điều hướng đối xứng gọn gàng */}
+            <div className="flex flex-col md:min-w-[320px] lg:min-w-[380px]">
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
+                <h4 className="font-playfair text-lg font-bold text-[#fdfbf6]">
+                  Khám phá nhanh
+                </h4>
+                <span className="text-[11px] uppercase tracking-widest text-[#c2ba9b]/70 font-mono">
+                  6 Chuyên mục
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 {navLinks.map((item) => {
                   const isActive = item.id === currentPage;
                   return (
-                    <li key={item.id}>
-                      <button
-                        onClick={() => handleNav(item.id)}
-                        className={`text-[15px] transition-colors flex items-center gap-2 group cursor-pointer ${
-                          isActive
-                            ? 'text-[#c2ba9b] font-semibold'
-                            : 'text-white/75 hover:text-[#c2ba9b]'
-                        }`}
-                      >
+                    <button
+                      key={item.id}
+                      onClick={() => handleNav(item.id)}
+                      className={`text-[14px] text-left transition-all py-1.5 px-2 rounded-lg flex items-center justify-between group cursor-pointer ${
+                        isActive
+                          ? 'text-[#c2ba9b] bg-white/5 font-medium'
+                          : 'text-white/75 hover:text-[#c2ba9b] hover:bg-white/[0.03]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
                         <span
-                          className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${
                             isActive
                               ? 'bg-[#c2ba9b] shadow-[0_0_8px_rgba(194,186,155,0.8)]'
-                              : 'bg-white/25 group-hover:bg-[#c2ba9b]'
+                              : 'bg-white/30 group-hover:bg-[#c2ba9b]'
                           }`}
                         />
-                        <span>
-                          {item.label}
-                          {isActive && <span className="ml-1 text-xs text-[#c2ba9b]/70 font-normal">(Đang xem)</span>}
-                        </span>
-                      </button>
-                    </li>
+                        <span className="truncate">{item.label}</span>
+                      </div>
+                      <ArrowRight
+                        size={12}
+                        className={`transition-transform opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 ${
+                          isActive ? 'opacity-80 text-[#c2ba9b]' : 'text-white/40'
+                        }`}
+                      />
+                    </button>
                   );
                 })}
-              </ul>
-            </div>
-
-            {/* Col 3: Liên hệ & MXH */}
-            <div className="flex flex-col">
-              <h4 className="font-playfair text-lg font-bold text-[#fdfbf6] mb-4">
-                Liên hệ & Kết nối
-              </h4>
-              <p className="text-[14px] text-white/70 mb-3">
-                Mọi đóng góp ý kiến hoặc hợp tác lan tỏa văn hóa đọc:
-              </p>
-              <a
-                href="mailto:docvatre@example.com"
-                className="inline-flex items-center gap-2 text-[15px] text-[#c2ba9b] font-medium hover:text-[#d4ccad] hover:underline mb-5 transition-colors"
-              >
-                <Mail size={16} />
-                <span>docvatre@example.com</span>
-              </a>
-
-              <div className="flex items-center gap-3">
-                <span className="text-xs uppercase tracking-wider text-white/50 font-semibold mr-1">
-                  Theo dõi:
-                </span>
-                <a
-                  href="#social"
-                  onClick={(e) => e.preventDefault()}
-                  title="Instagram Đọc & Trẻ"
-                  className="w-9 h-9 rounded-full bg-white/5 border border-white/15 text-white/80 hover:bg-[#c2ba9b] hover:text-black hover:border-[#c2ba9b] transition-all flex items-center justify-center"
-                >
-                  <Instagram size={17} />
-                </a>
-                <a
-                  href="#social"
-                  onClick={(e) => e.preventDefault()}
-                  title="Facebook Đọc & Trẻ"
-                  className="w-9 h-9 rounded-full bg-white/5 border border-white/15 text-white/80 hover:bg-[#c2ba9b] hover:text-black hover:border-[#c2ba9b] transition-all flex items-center justify-center"
-                >
-                  <Facebook size={17} />
-                </a>
-                <a
-                  href="#social"
-                  onClick={(e) => e.preventDefault()}
-                  title="TikTok Đọc & Trẻ"
-                  className="w-9 h-9 rounded-full bg-white/5 border border-white/15 text-white/80 hover:bg-[#c2ba9b] hover:text-black hover:border-[#c2ba9b] transition-all flex items-center justify-center font-bold text-xs"
-                >
-                  TT
-                </a>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Row 7.2: Dòng bản quyền */}
-        <div className="border-t border-white/10 py-6 px-4">
+        {/* Dòng bản quyền */}
+        <div className="border-t border-white/10 py-5 px-4">
           <div className="max-w-7xl mx-auto flex flex-col items-center justify-center text-center">
-            <div className="w-16 h-[2px] bg-[#c2ba9b] mb-3 opacity-60" />
+            <div className="w-12 h-[1.5px] bg-[#c2ba9b] mb-3 opacity-60" />
             <p className="text-xs sm:text-sm text-white/50 flex items-center gap-1.5 flex-wrap justify-center">
               <span>© 2026 Đọc & Trẻ. Nền tảng chia sẻ văn hóa đọc cho giới trẻ.</span>
               <span>·</span>
@@ -163,131 +128,97 @@ export default function Footer({ currentPage, onNavigate }: FooterProps) {
 
   return (
     <footer className="w-full bg-[#E3DCCF] border-t border-[#D6CDBF] text-[#3A3530] font-lora transition-colors duration-300">
-      {/* Row 7.1: Main Footer Content (Vintage Paper Mode) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 lg:gap-14">
-          {/* Col 1: Logo & Slogan */}
-          <div className="flex flex-col items-start">
+      {/* Main Footer Content (Vintage Paper Mode) */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-14">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-10 lg:gap-16">
+          {/* Col 1: Logo, Slogan & Project Identity */}
+          <div className="flex flex-col items-start max-w-xl">
             <button
               onClick={() => handleNav('home')}
               className="flex items-center gap-3 text-left group cursor-pointer"
             >
-              <div className="w-10 h-10 rounded-lg bg-[#FAF7F0] border border-[#D6CDBF] text-[#B56D4F] flex items-center justify-center transition-transform group-hover:scale-105">
+              <div className="w-10 h-10 rounded-lg bg-[#FAF7F0] border border-[#D6CDBF] text-[#B56D4F] flex items-center justify-center transition-transform group-hover:scale-105 shadow-sm">
                 <BookOpen size={22} strokeWidth={2} />
               </div>
               <span className="font-playfair text-2xl font-bold tracking-tight text-[#3A3530]">
                 Đọc & Trẻ
               </span>
             </button>
-            <p className="mt-3 text-[15px] text-[#6B635A] max-w-sm leading-relaxed">
+
+            <p className="mt-3.5 text-[15px] text-[#6B635A] leading-relaxed">
               Dự án số hóa phát triển từ kết quả khảo sát 100 bạn đọc trẻ Việt Nam, kết nối giới trẻ với trang sách và đồng hành giải quyết các rào cản thời đại số.
             </p>
+
             <div className="mt-4 flex items-center gap-2 text-xs text-[#6B635A]">
-              <Compass size={14} className="text-[#B56D4F]" />
+              <Compass size={14} className="text-[#B56D4F] shrink-0" />
               <span>Khởi nguồn từ khảo sát thực tế · Đồng hành cùng bạn đọc trẻ</span>
             </div>
 
             {/* Nhóm tác giả & Liên kết Về chúng mình */}
-            <div className="mt-5 pt-4 border-t border-[#D6CDBF]/70 w-full max-w-sm flex items-center justify-between text-xs text-[#6B635A]">
+            <div className="mt-5 pt-4 border-t border-[#D6CDBF]/70 w-full flex items-center justify-between text-xs text-[#6B635A]">
               <span>Dự án bởi Nhóm An Toàn Thông Tin</span>
               <button
                 onClick={() => handleNav('about')}
-                className="text-xs font-semibold text-[#B56D4F] hover:underline cursor-pointer"
+                className="text-xs font-semibold text-[#B56D4F] hover:underline cursor-pointer flex items-center gap-1"
               >
-                Về chúng mình →
+                <span>Về chúng mình</span>
+                <span>→</span>
               </button>
             </div>
           </div>
 
-          {/* Col 2: Menu nhanh */}
-          <div className="flex flex-col">
-            <h4 className="font-playfair text-lg font-bold text-[#3A3530] mb-4">
-              Khám phá nhanh
-            </h4>
-            <ul className="space-y-2.5">
+          {/* Col 2: Menu điều hướng đối xứng gọn gàng */}
+          <div className="flex flex-col md:min-w-[320px] lg:min-w-[380px]">
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#D6CDBF]">
+              <h4 className="font-playfair text-lg font-bold text-[#3A3530]">
+                Khám phá nhanh
+              </h4>
+              <span className="text-[11px] uppercase tracking-widest text-[#B56D4F] font-mono font-medium">
+                6 Chuyên mục
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
               {navLinks.map((item) => {
                 const isActive = item.id === currentPage;
                 return (
-                  <li key={item.id}>
-                    <button
-                      onClick={() => handleNav(item.id)}
-                      className={`text-[15px] transition-colors flex items-center gap-2 group cursor-pointer ${
-                        isActive
-                          ? 'text-[#B56D4F] font-bold'
-                          : 'text-[#3A3530] hover:text-[#B56D4F]'
-                      }`}
-                    >
+                  <button
+                    key={item.id}
+                    onClick={() => handleNav(item.id)}
+                    className={`text-[14px] text-left transition-all py-1.5 px-2 rounded-lg flex items-center justify-between group cursor-pointer ${
+                      isActive
+                        ? 'text-[#B56D4F] font-bold bg-[#D6CDBF]/30'
+                        : 'text-[#3A3530] hover:text-[#B56D4F] hover:bg-[#D6CDBF]/20'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
                       <span
-                        className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${
                           isActive
                             ? 'bg-[#B56D4F]'
                             : 'bg-[#B56D4F]/40 group-hover:bg-[#B56D4F]'
                         }`}
                       />
-                      <span>
-                        {item.label}
-                        {isActive && <span className="ml-1 text-xs text-[#B56D4F]/70 font-normal">(Đang xem)</span>}
-                      </span>
-                    </button>
-                  </li>
+                      <span className="truncate">{item.label}</span>
+                    </div>
+                    <ArrowRight
+                      size={12}
+                      className={`transition-transform opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 ${
+                        isActive ? 'opacity-80 text-[#B56D4F]' : 'text-[#6B635A]'
+                      }`}
+                    />
+                  </button>
                 );
               })}
-            </ul>
-          </div>
-
-          {/* Col 3: Liên hệ & MXH */}
-          <div className="flex flex-col">
-            <h4 className="font-playfair text-lg font-bold text-[#3A3530] mb-4">
-              Liên hệ & Kết nối
-            </h4>
-            <p className="text-[14px] text-[#6B635A] mb-3">
-              Mọi đóng góp ý kiến hoặc hợp tác lan tỏa văn hóa đọc:
-            </p>
-            <a
-              href="mailto:docvatre@example.com"
-              className="inline-flex items-center gap-2 text-[15px] text-[#B56D4F] font-medium hover:underline mb-5"
-            >
-              <Mail size={16} />
-              <span>docvatre@example.com</span>
-            </a>
-
-            <div className="flex items-center gap-3">
-              <span className="text-xs uppercase tracking-wider text-[#6B635A] font-semibold mr-1">
-                Theo dõi:
-              </span>
-              <a
-                href="#social"
-                onClick={(e) => e.preventDefault()}
-                title="Instagram Đọc & Trẻ"
-                className="w-9 h-9 rounded-full bg-[#FAF7F0] border border-[#D6CDBF] text-[#B56D4F] hover:bg-[#B56D4F] hover:text-white transition-all flex items-center justify-center"
-              >
-                <Instagram size={17} />
-              </a>
-              <a
-                href="#social"
-                onClick={(e) => e.preventDefault()}
-                title="Facebook Đọc & Trẻ"
-                className="w-9 h-9 rounded-full bg-[#FAF7F0] border border-[#D6CDBF] text-[#B56D4F] hover:bg-[#B56D4F] hover:text-white transition-all flex items-center justify-center"
-              >
-                <Facebook size={17} />
-              </a>
-              <a
-                href="#social"
-                onClick={(e) => e.preventDefault()}
-                title="TikTok Đọc & Trẻ"
-                className="w-9 h-9 rounded-full bg-[#FAF7F0] border border-[#D6CDBF] text-[#B56D4F] hover:bg-[#B56D4F] hover:text-white transition-all flex items-center justify-center font-bold text-xs"
-              >
-                TT
-              </a>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Row 7.2: Dòng bản quyền */}
-      <div className="border-t border-[#D6CDBF] py-6 px-4">
+      {/* Dòng bản quyền */}
+      <div className="border-t border-[#D6CDBF] py-5 px-4">
         <div className="max-w-7xl mx-auto flex flex-col items-center justify-center text-center">
-          <div className="w-16 h-[2px] bg-[#B56D4F] mb-3 opacity-60" />
+          <div className="w-12 h-[1.5px] bg-[#B56D4F] mb-3 opacity-60" />
           <p className="text-xs sm:text-sm text-[#6B635A] flex items-center gap-1.5 flex-wrap justify-center">
             <span>© 2026 Đọc & Trẻ. Nền tảng chia sẻ văn hóa đọc cho giới trẻ.</span>
             <span>·</span>
